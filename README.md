@@ -1,2 +1,2 @@
-# druid_sql_query_llm_finetuning
+# Druid SQL Query LLM Finetuning
 Fine tune an LLM model on custom data to become an expert in writing Druid SQL queries
