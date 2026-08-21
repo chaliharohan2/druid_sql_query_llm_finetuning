@@ -1,0 +1,43 @@
+# Druid 35.0.0 — nano-quickstart sized for on-demand local use.
+# Do not set DRUID_XMX / DRUID_MAXDIRECTMEMORYSIZE here: the image then uses
+# per-service nano-quickstart jvm.config (Coordinator 256m, Broker/Historical
+# 512m+400m direct, Router 128m, MiddleManager 64m).
+# Estimated peak for the whole compose stack: ~6–8 GB unified RAM.
+
+DRUID_SINGLE_NODE_CONF=nano-quickstart
+
+druid_emitter=noop
+druid_emitter_logging_logLevel=info
+
+druid_extensions_loadList=["druid-histogram", "druid-datasketches", "druid-lookups-cached-global", "postgresql-metadata-storage"]
+
+druid_zk_service_host=zookeeper
+
+druid_metadata_storage_host=
+druid_metadata_storage_type=postgresql
+druid_metadata_storage_connector_connectURI=jdbc:postgresql://postgres:5432/druid
+druid_metadata_storage_connector_user=druid
+druid_metadata_storage_connector_password=FoolishPassword
+
+# Peon JVM: nano-quickstart (not the official docker 1g+3g defaults).
+druid_indexer_runner_javaOptsArray=["-server", "-Xmx256m", "-Xms256m", "-XX:MaxDirectMemorySize=300m", "-Duser.timezone=UTC", "-Dfile.encoding=UTF-8", "-XX:+ExitOnOutOfMemoryError", "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"]
+druid_worker_capacity=2
+druid_indexer_fork_property_druid_processing_buffer_sizeBytes=25MiB
+druid_indexer_fork_property_druid_processing_numMergeBuffers=2
+druid_indexer_fork_property_druid_processing_numThreads=1
+
+druid_storage_type=local
+druid_storage_storageDirectory=/opt/shared/segments
+druid_indexer_logs_type=file
+druid_indexer_logs_directory=/opt/shared/indexing-logs
+
+# Match nano-quickstart processing so 400m direct memory is enough.
+druid_processing_numThreads=1
+druid_processing_numMergeBuffers=2
+druid_processing_buffer_sizeBytes=50MiB
+
+druid_sql_enable=true
+druid_indexing_doubleStorage=double
+
+# Allow SQL-based ingestion from bind-mounted local files and inline data.
+druid_indexer_task_inputSource_local_enabled=true

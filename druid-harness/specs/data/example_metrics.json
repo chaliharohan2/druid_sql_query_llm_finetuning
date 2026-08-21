@@ -1,0 +1,5 @@
+[
+  {"__time": 1704067200000, "country": "US", "clicks": 10, "revenue": 1.5, "score": 0.25},
+  {"__time": 1704067260000, "country": "IN", "clicks": 20, "revenue": 2.5, "score": 0.5},
+  {"__time": 1704067320000, "country": "DE", "clicks": 30, "revenue": 3.5, "score": 0.75}
+]

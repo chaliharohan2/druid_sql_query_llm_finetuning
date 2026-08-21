@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Druid harness generated seed files and local reports
+druid-harness/data/generated/
+druid-harness/**/*.csv
+!druid-harness/specs/data/*.csv
+druid-harness/docker/apache-druid-*-bin.tar.gz

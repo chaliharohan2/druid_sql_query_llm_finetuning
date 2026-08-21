@@ -1,0 +1,13 @@
+{
+  "name": "example_events",
+  "columns": [
+    {"name": "__time", "type": "long", "is_time": true},
+    {"name": "channel", "type": "string"},
+    {"name": "delta", "type": "long"}
+  ],
+  "seed": {
+    "mode": "generate",
+    "row_count": 20,
+    "random_seed": 42
+  }
+}

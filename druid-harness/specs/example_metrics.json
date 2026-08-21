@@ -1,0 +1,15 @@
+{
+  "name": "example_metrics",
+  "columns": [
+    {"name": "__time", "type": "long", "is_time": true},
+    {"name": "country", "type": "string"},
+    {"name": "clicks", "type": "long"},
+    {"name": "revenue", "type": "double"},
+    {"name": "score", "type": "float"}
+  ],
+  "seed": {
+    "mode": "generate",
+    "row_count": 20,
+    "random_seed": 42
+  }
+}
