@@ -218,7 +218,7 @@ def _coerce_row(row: dict[str, Any], spec: DatasourceSpec, origin: str) -> dict[
 
 
 def _coerce_value(value: Any, column: ColumnSpec) -> Any:
-    if value is None or value == "":
+    if value is None or (isinstance(value, str) and value == ""):
         raise LoaderError(f"Null/empty value for column {column.name!r}")
     if column.type == "string":
         return str(value)
@@ -226,6 +226,10 @@ def _coerce_value(value: Any, column: ColumnSpec) -> Any:
         return int(value)
     if column.type in {"float", "double"}:
         return float(value)
+    if column.type == "array<string>":
+        if not isinstance(value, list):
+            raise LoaderError(f"Column {column.name!r} must be a list of strings")
+        return [str(item) for item in value]
     return value
 
 
@@ -264,7 +268,7 @@ def build_inline_ingest_sql(spec: DatasourceSpec, rows: list[dict[str, Any]], *,
 def _build_extern_sql(spec: DatasourceSpec, input_source: str, *, replace: bool) -> str:
     input_format = json.dumps({"type": "json"}, separators=(",", ":"))
     signature = json.dumps(
-        [{"name": col.name, "type": col.type} for col in spec.columns],
+        [{"name": col.name, "type": _signature_type(col)} for col in spec.columns],
         separators=(",", ":"),
     )
     select_list = ",\n  ".join(_select_expr(col) for col in spec.columns)
@@ -287,12 +291,20 @@ def _build_extern_sql(spec: DatasourceSpec, input_source: str, *, replace: bool)
     )
 
 
+def _signature_type(column: ColumnSpec) -> str:
+    if column.type == "array<string>":
+        return "ARRAY<STRING>"
+    return column.type
+
+
 def _select_expr(column: ColumnSpec) -> str:
     ident = sql_ident(column.name)
     if column.is_time:
         if column.type == "string":
             return f"TIME_PARSE({ident}) AS __time"
         return f"MILLIS_TO_TIMESTAMP({ident}) AS __time"
+    if column.type == "array<string>":
+        return f"ARRAY_TO_MV({ident}) AS {ident}"
     return ident
 
 

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-ALLOWED_TYPES = {"long", "float", "double", "string"}
+ALLOWED_TYPES = {"long", "float", "double", "string", "array<string>"}
 ALLOWED_SEED_MODES = {"generate", "file"}
 ALLOWED_FILE_FORMATS = {"csv", "json"}
 
