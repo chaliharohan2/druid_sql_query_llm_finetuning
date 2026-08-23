@@ -23,9 +23,13 @@ from harness.api import result_as_dict, run_query
 
 # Replace this with the SQL you want to run.
 QUERY = """
-SELECT channel, COUNT(*) AS c
-FROM example_events
-GROUP BY channel
+SELECT TIME_FLOOR(__time, 'PT1H') AS "hour",
+       AVG(latency_ms) AS "avg_latency_ms"
+FROM ds_web_events
+WHERE event_type = 'checkout'
+  AND __time >= CURRENT_TIMESTAMP - INTERVAL '7' DAY
+GROUP BY 1
+ORDER BY 1
 """
 
 ROUTER_URL = "http://127.0.0.1:8888"

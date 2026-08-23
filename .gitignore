@@ -222,3 +222,12 @@ druid-harness/data/generated/
 druid-harness/**/*.csv
 !druid-harness/specs/data/*.csv
 druid-harness/docker/apache-druid-*-bin.tar.gz
+
+# Training files and data
+dataset/
+
+# Temp files
+test.txt
+
+# Model files
+models/
