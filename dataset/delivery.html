@@ -1,0 +1,298 @@
+<title>Druid SQL Training Set</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@0,400;0,500;0,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --ground:#EFF2F2; --card:#FFFFFF; --sunk:#F6F8F8;
+  --ink:#131A1B; --body:#2B3536; --muted:#5E6C6E; --faint:#8B9799;
+  --rule:#DCE3E3; --rule-hi:#C3CFCF;
+  --accent:#0B6A6A; --accent-soft:#DCEDEB; --accent-ink:#075252;
+  --warn:#8A5610; --warn-soft:#F5E9D6;
+  --sys:#4B4E9B;
+  --shadow:0 1px 2px rgba(19,26,27,.05), 0 6px 18px -10px rgba(19,26,27,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0D1213; --card:#151B1C; --sunk:#101617;
+    --ink:#E7ECEC; --body:#C3CCCD; --muted:#8D9A9C; --faint:#6B7779;
+    --rule:#242D2E; --rule-hi:#33403F;
+    --accent:#46ADA5; --accent-soft:#12302E; --accent-ink:#7FCFC8;
+    --warn:#D5A159; --warn-soft:#33270F;
+    --sys:#8C90E0;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D1213; --card:#151B1C; --sunk:#101617;
+  --ink:#E7ECEC; --body:#C3CCCD; --muted:#8D9A9C; --faint:#6B7779;
+  --rule:#242D2E; --rule-hi:#33403F;
+  --accent:#46ADA5; --accent-soft:#12302E; --accent-ink:#7FCFC8;
+  --warn:#D5A159; --warn-soft:#33270F;
+  --sys:#8C90E0;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--body);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Bricolage Grotesque","Public Sans",sans-serif;color:var(--ink);
+  text-wrap:balance;margin:0;font-weight:700;letter-spacing:-.02em;line-height:1.14}
+code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+section{padding:44px 0}
+section+section{border-top:1px solid var(--rule)}
+h2{font-size:22px;margin-bottom:8px}
+h2+p.sub{margin:0 0 22px;max-width:72ch;color:var(--muted)}
+
+/* masthead */
+.mast{background:var(--card);border-bottom:1px solid var(--rule)}
+.mast .wrap{padding:52px 24px 36px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+  font-weight:600;font-family:"JetBrains Mono",monospace}
+h1{font-size:clamp(34px,5.2vw,52px)}
+.lede{max-width:66ch;font-size:17px;margin:0}
+.lede strong{color:var(--ink);font-weight:600}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.hero div{background:var(--card);padding:15px 18px}
+.hero b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:27px;color:var(--ink);
+  line-height:1;font-variant-numeric:tabular-nums}
+.hero b.ok{color:var(--accent)}
+.hero span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+  display:block;margin-top:5px}
+
+/* bars */
+.bars{display:flex;flex-direction:column;gap:5px}
+.bar{display:grid;grid-template-columns:186px 1fr 54px;align-items:center;gap:12px;font-size:13.5px}
+.bar .n{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .t{height:16px;background:var(--sunk);border-radius:2px;overflow:hidden;position:relative}
+.bar .t i{display:block;height:100%;background:var(--accent);opacity:.85}
+.bar .t i.v{background:var(--sys);opacity:.6}
+.bar .v{font-variant-numeric:tabular-nums;text-align:right;color:var(--muted);font-size:12.5px}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:12px;align-items:center}
+.legend i{display:inline-block;width:22px;height:9px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+.legend i.a{background:var(--accent);opacity:.85}
+.legend i.b{background:var(--sys);opacity:.6}
+
+/* split */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:760px){.split{grid-template-columns:1fr}}
+.pane{background:var(--card);border:1px solid var(--rule);border-radius:4px;box-shadow:var(--shadow);
+  padding:18px 20px}
+.pane h3{font-size:15px;margin-bottom:4px;display:flex;align-items:baseline;gap:9px}
+.pane h3 em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--accent)}
+.pane p{margin:0 0 12px;font-size:13.5px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:"JetBrains Mono",monospace;font-size:11px;padding:3px 8px;border-radius:2px;
+  background:var(--sunk);border:1px solid var(--rule);color:var(--body)}
+.chip.held{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink)}
+
+/* tables */
+.tscroll{overflow-x:auto;border:1px solid var(--rule);border-radius:4px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--faint);font-weight:600;background:var(--sunk);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.m{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--ink);white-space:nowrap}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+/* sample browser */
+.tabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:10px}
+.tab{appearance:none;border:1px solid transparent;background:transparent;cursor:pointer;font:inherit;
+  font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted);padding:6px 11px;
+  border-radius:3px;white-space:nowrap}
+.tab:hover{background:var(--card);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--rule-hi)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rec{background:var(--card);border:1px solid var(--rule);border-radius:4px;overflow:hidden;
+  box-shadow:var(--shadow)}
+.rec .hd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:11px 18px;
+  border-bottom:1px solid var(--rule);background:var(--sunk);font-size:12px}
+.rec .hd .k{font-family:"JetBrains Mono",monospace;color:var(--faint)}
+.rec .hd .k b{color:var(--ink);font-weight:600}
+.turn{border-top:1px solid var(--rule)}
+.turn:first-of-type{border-top:0}
+.turn .r{display:flex;align-items:center;gap:8px;padding:7px 18px;background:var(--sunk)}
+.turn .r i{width:6px;height:6px;border-radius:50%;background:var(--accent);font-style:normal}
+.turn.system .r i{background:var(--sys)}
+.turn.assistant .r i{background:var(--warn)}
+.turn .r span{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);font-weight:600}
+.turn pre{margin:0;padding:13px 18px;font-size:12.5px;line-height:1.6;color:var(--ink);
+  overflow:auto;max-height:24rem;white-space:pre}
+.trap{margin:0;padding:12px 18px;background:var(--warn-soft);border-top:1px solid var(--rule);
+  font-size:12.5px;color:var(--warn)}
+.trap b{font-family:"JetBrains Mono",monospace;display:block;margin-top:5px;white-space:pre-wrap;
+  font-weight:400;color:var(--warn)}
+
+/* gates */
+.gates{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.gate{background:var(--card);padding:16px 18px}
+.gate b{display:block;font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.08em;
+  color:var(--accent);margin-bottom:5px}
+.gate p{margin:0;font-size:13px;color:var(--muted)}
+pre.sh{background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:16px 18px;
+  font-size:12.5px;line-height:1.7;overflow-x:auto;color:var(--ink);margin:0}
+pre.sh .c{color:var(--faint)}
+.notes{border-left:2px solid var(--accent);padding-left:16px;display:flex;flex-direction:column;gap:11px}
+.notes p{margin:0;max-width:72ch}
+.notes p b{color:var(--ink)}
+footer{padding:26px 0 46px;font-size:12px;color:var(--faint);text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="mast"><div class="wrap">
+  <div class="eyebrow">Steps 3 &amp; 4 &middot; dataset/</div>
+  <h1>Druid SQL Training Set</h1>
+  <p class="lede">A thousand training examples and a hundred and fifty validation examples, spread across <strong>69 datasources</strong> and <strong>twelve prompt formats</strong>. Every query was executed against a live Apache Druid 35.0.0 cluster before it was allowed into the file. <strong>Nothing here was written from memory.</strong></p>
+  <div class="hero" id="hero"></div>
+</div></header>
+
+<section><div class="wrap">
+  <h2>The split holds whole families back</h2>
+  <p class="sub">Holding out one variant of a family would leave its siblings in training with near-identical column names. The split has to be disjoint in vocabulary, not just in table name &mdash; so six entire families go to validation, chosen so that validation still exercises every enrichment shape training teaches.</p>
+  <div class="split" id="split"></div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Formats come out even</h2>
+  <p class="sub">You asked for an even spread so the serving format stays your choice. Assignment runs most-constrained-example-first, each going to whichever eligible format is currently least used. All twelve land within one example of each other.</p>
+  <div class="bars" id="fmtbars"></div>
+  <div class="legend"><span><i class="a"></i>train</span><span><i class="b"></i>validation</span></div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>What the examples teach</h2>
+  <p class="sub" id="clsub"></p>
+  <div class="bars" id="clbars"></div>
+  <div class="legend"><span><i class="a"></i>train</span><span><i class="b"></i>validation</span></div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>One record per format</h2>
+  <p class="sub">Drawn from the file that ships. Where an example carries a trap, the trap is shown too &mdash; it is validated but never given to the model.</p>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div id="rec"></div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Four gates, not one</h2>
+  <p class="sub"><code>VALID</code> alone is not enough. <code>JSON_VALUE(json_string_col, '$.k')</code> is accepted by Druid and returns <code>NULL</code> for every row, which is exactly the failure a syntax check cannot see.</p>
+  <div class="gates">
+    <div class="gate"><b>EXEC</b><p>The completion returns <code>VALID</code> from Druid 35.0.0.</p></div>
+    <div class="gate"><b>ROWS</b><p>It returns at least one row, so the filters match real data.</p></div>
+    <div class="gate"><b>LINT</b><p>It contains the construct its cluster exists to teach.</p></div>
+    <div class="gate"><b>TRAP</b><p>The naive standard-SQL version fails, or returns something different.</p></div>
+  </div>
+  <p style="margin:20px 0 0" id="gateresult"></p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Reproducing it</h2>
+  <p class="sub">The time anchor is pinned in <code>dataset_meta.json</code>, so regenerating reproduces the seed rows byte for byte. Change the anchor and every datasource needs reloading, because the queries were validated against the data currently ingested.</p>
+  <pre class="sh"><span class="c"># ~6-8 GB RAM, on-demand only</span>
+cd druid-harness &amp;&amp; make up
+cd ../dataset &amp;&amp; export PYTHONPATH=$PWD/../druid-harness
+
+python3 gen_schemas.py     <span class="c"># specs, seed rows, schema_index.json</span>
+python3 load_all.py        <span class="c"># ingest 69 datasources + lookups (~13 min)</span>
+python3 generate.py        <span class="c"># draw, split, balance clusters and formats</span>
+python3 validate_bulk.py   <span class="c"># four gates against the live cluster</span>
+python3 emit_sft.py        <span class="c"># train.jsonl, val.jsonl, dataset_stats.json</span>
+python3 make_readme.py     <span class="c"># dataset/README.md, from the artefacts</span></pre>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Worth knowing before you train</h2>
+  <div class="notes">
+    <p><b>The prompt is five to twenty times the answer.</b> If the training config computes loss over the whole sequence, the schema block dominates it and most of the gradient goes into learning to reproduce schemas rather than to write SQL. Masking loss to the completion is worth checking before a long run. That is a call for <code>lora_training.py</code>, which this pipeline does not touch.</p>
+    <p><b>Three claims in the spec doc were disproved during this build</b> and are now recorded in its Refuted section. <code>CAST(str AS TIMESTAMP)</code> parses both string timestamp formats correctly, so a trap that assumed only <code>TIME_PARSE</code> works failed validation and was replaced. <code>JSON_VALUE</code> renders JSON booleans as <code>'1'</code>/<code>'0'</code>, never <code>'true'</code>/<code>'false'</code>, which silently matched nothing. And probing all 493 column names found exactly two &mdash; <code>value</code> and <code>language</code> &mdash; that Druid refuses unquoted as identifiers, not just as aliases.</p>
+    <p><b>A real bug caught late.</b> Generated join examples referenced their dimension table without that table appearing in the prompt, so the answer was underivable from its own input. Every record is now checked: no query references a table its prompt does not carry.</p>
+    <p><b>Approximate aggregators are the house style.</b> The model will reach for <code>APPROX_COUNT_DISTINCT</code> even where an exact count was wanted. Deliberate, per your decision, but worth remembering when you read its output.</p>
+  </div>
+</div></section>
+
+<footer>Validated against Apache Druid 35.0.0 &middot; <span id="rows"></span> rows ingested across 69 datasources</footer>
+
+<script id="data" type="application/json">{"stats": {"anchor": "2026-08-26T08:00:00+00:00", "holdout_families": ["cdn_edge", "crypto_trades", "dim_stores", "retail_pos", "streaming_media", "support_tickets"], "train_schemas": ["ad_impressions", "api_gateway_v0", "api_gateway_v1", "api_gateway_v2", "app_logs_v0", "app_logs_v1", "app_logs_v2", "clinical_telemetry_v0", "clinical_telemetry_v1", "dim_carriers", "dim_drivers", "dim_segments", "dim_warehouses", "email_campaigns_v0", "email_campaigns_v1", "email_campaigns_v2", "energy_meter_v0", "energy_meter_v1", "energy_meter_v2", "fin_txn", "fleet_gps_v0", "fleet_gps_v1", "fleet_gps_v2", "food_delivery_v0", "food_delivery_v1", "food_delivery_v2", "game_sessions", "inventory_v0", "inventory_v1", "inventory_v2", "iot_readings", "logistics_v0", "logistics_v1", "logistics_v2", "ml_inference_v0", "ml_inference_v1", "ml_inference_v2", "network_flows_v0", "network_flows_v1", "network_flows_v2", "orders", "payment_gateway_v0", "payment_gateway_v1", "payment_gateway_v2", "products", "ride_hailing_v0", "ride_hailing_v1", "ride_hailing_v2", "sec_alerts", "telco_cdr", "web_events", "workforce_v0", "workforce_v1"], "val_schemas": ["cdn_edge_v0", "cdn_edge_v1", "cdn_edge_v2", "crypto_trades_v0", "crypto_trades_v1", "crypto_trades_v2", "retail_pos_v0", "retail_pos_v1", "retail_pos_v2", "streaming_media_v0", "streaming_media_v1", "streaming_media_v2", "support_tickets_v0", "support_tickets_v1", "support_tickets_v2"], "train": {"records": 1000, "with_distractor_tables": 236, "prompt_chars": {"min": 141, "p50": 1039, "p95": 3065, "max": 7217, "mean": 1288}, "answer_chars": {"min": 62, "max": 378, "mean": 172}, "clusters": {"time_bucketing": 88, "mvd": 81, "relative_time": 79, "grouping": 78, "order_by_restriction": 62, "approx_agg": 61, "missing_function": 54, "time_extract_format": 53, "reserved_alias": 52, "string_time_column": 46, "latest_earliest": 44, "timestamp_literal": 41, "filtered_agg": 41, "time_shift": 36, "epoch_time_column": 34, "join": 33, "null_math": 33, "string_ops": 33, "json_string": 27, "lookup": 17, "reserved_column": 7}, "formats": {"druid_native": 84, "no_system": 84, "json": 84, "yaml": 84, "ddl": 83, "pipe_table": 83, "bare": 83, "md_sections": 83, "question_first": 83, "sample_rows": 83, "compact": 83, "verbose_rules": 83}, "schemas": {"web_events": 44, "sec_alerts": 37, "ad_impressions": 32, "app_logs_v0": 28, "products": 27, "food_delivery_v2": 27, "orders": 26, "fleet_gps_v2": 26, "clinical_telemetry_v0": 24, "app_logs_v2": 24, "network_flows_v0": 24, "email_campaigns_v0": 23, "ml_inference_v0": 23, "telco_cdr": 22, "logistics_v2": 22, "inventory_v2": 22, "email_campaigns_v2": 22, "ride_hailing_v0": 22, "food_delivery_v0": 22, "api_gateway_v2": 22, "ml_inference_v2": 22, "logistics_v1": 21, "workforce_v0": 20, "api_gateway_v0": 20, "api_gateway_v1": 20, "fin_txn": 19, "ride_hailing_v2": 19, "inventory_v0": 19, "game_sessions": 18, "energy_meter_v2": 18, "payment_gateway_v0": 18, "ml_inference_v1": 18, "iot_readings": 17, "clinical_telemetry_v1": 17, "app_logs_v1": 17, "network_flows_v1": 17, "energy_meter_v0": 16, "payment_gateway_v1": 16, "fleet_gps_v0": 16, "network_flows_v2": 16, "fleet_gps_v1": 16, "payment_gateway_v2": 15, "energy_meter_v1": 15, "workforce_v1": 14, "email_campaigns_v1": 14, "inventory_v1": 13, "ride_hailing_v1": 13, "food_delivery_v1": 13, "logistics_v0": 12, "dim_drivers": 10, "dim_carriers": 5, "dim_warehouses": 5, "dim_segments": 5}, "prompt_tables": {"web_events": 52, "sec_alerts": 41, "ad_impressions": 37, "food_delivery_v2": 36, "orders": 33, "clinical_telemetry_v0": 33, "app_logs_v0": 33, "network_flows_v0": 33, "api_gateway_v2": 32, "api_gateway_v1": 32, "workforce_v0": 31, "products": 31, "app_logs_v2": 31, "fleet_gps_v2": 31, "food_delivery_v0": 30, "email_campaigns_v0": 30, "fin_txn": 29, "network_flows_v1": 29, "email_campaigns_v2": 29, "logistics_v2": 29, "inventory_v2": 29, "inventory_v0": 29, "ml_inference_v0": 28, "ride_hailing_v0": 28, "game_sessions": 27, "telco_cdr": 26, "ml_inference_v1": 26, "ride_hailing_v2": 26, "fleet_gps_v1": 26, "api_gateway_v0": 26, "energy_meter_v0": 25, "logistics_v1": 24, "payment_gateway_v1": 24, "clinical_telemetry_v1": 24, "app_logs_v1": 24, "fleet_gps_v0": 24, "network_flows_v2": 24, "iot_readings": 23, "payment_gateway_v0": 23, "ml_inference_v2": 23, "energy_meter_v2": 22, "energy_meter_v1": 22, "ride_hailing_v1": 21, "workforce_v1": 19, "food_delivery_v1": 18, "payment_gateway_v2": 18, "dim_drivers": 17, "inventory_v1": 17, "email_campaigns_v1": 17, "dim_warehouses": 15, "logistics_v0": 15, "dim_carriers": 12, "dim_segments": 12}, "dropped_by_gates": 0}, "val": {"records": 150, "with_distractor_tables": 29, "prompt_chars": {"min": 179, "p50": 974, "p95": 2843, "max": 5068, "mean": 1181}, "answer_chars": {"min": 70, "max": 339, "mean": 170}, "clusters": {"time_bucketing": 13, "relative_time": 12, "grouping": 11, "order_by_restriction": 9, "approx_agg": 9, "reserved_alias": 8, "time_extract_format": 8, "missing_function": 8, "epoch_time_column": 7, "mvd": 7, "string_time_column": 7, "filtered_agg": 7, "latest_earliest": 7, "json_string": 6, "join": 5, "lookup": 5, "time_shift": 5, "string_ops": 5, "null_math": 5, "timestamp_literal": 4, "reserved_column": 2}, "formats": {"pipe_table": 13, "yaml": 13, "question_first": 13, "druid_native": 13, "ddl": 13, "bare": 13, "md_sections": 12, "sample_rows": 12, "compact": 12, "no_system": 12, "json": 12, "verbose_rules": 12}, "schemas": {"retail_pos_v2": 14, "streaming_media_v1": 14, "crypto_trades_v0": 13, "crypto_trades_v1": 12, "streaming_media_v0": 11, "cdn_edge_v0": 10, "cdn_edge_v1": 10, "streaming_media_v2": 10, "retail_pos_v1": 10, "support_tickets_v1": 9, "support_tickets_v2": 8, "support_tickets_v0": 8, "cdn_edge_v2": 7, "retail_pos_v0": 7, "crypto_trades_v2": 7, "dim_stores": 5}, "prompt_tables": {"streaming_media_v1": 20, "crypto_trades_v1": 17, "retail_pos_v2": 16, "retail_pos_v1": 15, "streaming_media_v0": 14, "streaming_media_v2": 13, "crypto_trades_v0": 13, "crypto_trades_v2": 12, "cdn_edge_v1": 12, "support_tickets_v2": 11, "support_tickets_v1": 11, "support_tickets_v0": 10, "retail_pos_v0": 10, "cdn_edge_v0": 10, "cdn_edge_v2": 7, "dim_stores": 5}, "dropped_by_gates": 0}}, "samples": [{"id": "tr_0461", "format": "md_sections", "cluster": "null_math", "template": "nm_coalesce", "schemas": ["inventory_v2"], "distractors": [], "turns": [{"role": "system", "content": "You write Apache Druid SQL.\nReturn only the query.\n\n# Database Schema\n\n## Table: `inventory_daily`\n### Columns:\n`uom` (VARCHAR): Unit of measure.\n`shelf_life_days` (BIGINT): Days of shelf life left.\n`warehouse_code` (VARCHAR): Warehouse the movement happened in.\n`unit_cost` (DOUBLE): Cost per unit at booking time.\n`reason_code` (VARCHAR): Reason booked against the movement.\n`item_code` (VARCHAR): Stock item code. High cardinality.\n`__time` (TIMESTAMP): Time the movement was booked. Becomes `__time`, the only TIMESTAMP column.\n`recorded_at` (VARCHAR): Source-system time held as a string, format 'yyyy-MM-dd HH:mm:ss'. Parse with TIME_PARSE before using time functions.\n`operator_ref` (VARCHAR): Operator who booked the movement.\n`storage_zone` (VARCHAR): Zone within the warehouse."}, {"role": "user", "content": "Mean shelf_life_days by storage_zone with nulls replaced by zero"}, {"role": "assistant", "content": "SELECT storage_zone AS \"storage_zone\",\n       COALESCE(AVG(shelf_life_days), 0) AS \"avg_shelf_life_days\"\nFROM inventory_daily\nGROUP BY 1\nORDER BY 2 DESC"}], "trap": null, "gates": {"must_contain": ["COALESCE"], "expect_rows": true}}, {"id": "tr_0610", "format": "ddl", "cluster": "relative_time", "template": "rt_hours", "schemas": ["app_logs_v2"], "distractors": ["food_delivery_v0"], "turns": [{"role": "system", "content": "You are a text-to-SQL engine for Apache Druid 35.0.0.\nSchema:\n\nCREATE TABLE ds_food_delivery (\n  __time          TIMESTAMP,  -- Time the order was placed. Becomes `__time`, the only TIMESTAMP column.\n  promo_code      VARCHAR,    -- Promotion applied, or none.\n  items_count     BIGINT,     -- Line items in the basket.\n  courier_id      VARCHAR,    -- Assigned courier.\n  restaurant_id   VARCHAR,    -- Restaurant fulfilling the order.\n  fulfilment      VARCHAR,    -- How the order reached the customer.\n  delivery_fee    DOUBLE,     -- Delivery fee charged.\n  basket_total    DOUBLE,     -- Order subtotal before fees.\n  received_at_ms  BIGINT,     -- Upstream receive time as epoch MILLISECONDS. Not a TIMESTAMP -- convert with MILLIS_TO_TIMESTAMP before using time functions.\n  cuisine         VARCHAR,    -- Kitchen category.\n  customer_id     VARCHAR,    -- Customer identifier. High cardinality.\n  prep_minutes    BIGINT,     -- Minutes the kitchen took.\n  order_channel   VARCHAR,    -- Where the order came from.\n  dietary_flags   VARCHAR     -- Multi-value dimension. Dietary labels across the basket.\n);\n\nCREATE TABLE app_logs_daily (\n  region         VARCHAR,    -- Cloud region the pod ran in.\n  heap_used_mb   BIGINT,     -- Heap in use when the record was written, in MB.\n  pod_name       VARCHAR,    -- Pod the record came from.\n  trace_id       VARCHAR,    -- Distributed trace identifier. High cardinality.\n  service_name   VARCHAR,    -- Emitting service.\n  recorded_at    VARCHAR,    -- Source-system time held as a string, format 'yyyy-MM-dd HH:mm:ss'. Parse with TIME_PARSE before using time functions.\n  log_tags       VARCHAR,    -- Multi-value dimension. Free-form labels attached by the logging library.\n  k8s_namespace  VARCHAR,    -- Kubernetes namespace.\n  __time         TIMESTAMP,  -- Time the log line was emitted. Becomes `__time`, the only TIMESTAMP column.\n  env            VARCHAR,    -- Deployment environment.\n  gc_pause_ms    DOUBLE      -- Longest GC pause in the preceding second.\n);\n-- lookup service_owner: LOOKUP(service_name, 'service_owner') -> Maps a service to the team that owns it.\n\nRespond with one Druid SQL query and nothing else."}, {"role": "user", "content": "Highest heap_used_mb in the last 36 hours"}, {"role": "assistant", "content": "SELECT MAX(heap_used_mb) AS \"max_heap_used_mb\"\nFROM app_logs_daily\nWHERE __time >= CURRENT_TIMESTAMP - INTERVAL '36' HOUR"}], "trap": null, "gates": {"must_contain": ["HOUR"], "expect_rows": true}}, {"id": "tr_0362", "format": "yaml", "cluster": "order_by_restriction", "template": "ob_oldest_rows", "schemas": ["app_logs_v2"], "distractors": [], "turns": [{"role": "system", "content": "Write Apache Druid SQL for the user's question using this schema.\n\ndialect: apache-druid\ntables:\n  - name: app_logs_daily\n    domain: Application observability\n    columns:\n      - name: region\n        type: VARCHAR\n        description: \"Cloud region the pod ran in.\"\n      - name: log_tags\n        type: VARCHAR\n        description: \"Multi-value dimension. Free-form labels attached by the logging library.\"\n      - name: __time\n        type: TIMESTAMP\n        description: \"Time the log line was emitted. Becomes `__time`, the only TIMESTAMP column.\"\n      - name: gc_pause_ms\n        type: DOUBLE\n        description: \"Longest GC pause in the preceding second.\"\n      - name: service_name\n        type: VARCHAR\n        description: \"Emitting service.\"\n      - name: recorded_at\n        type: VARCHAR\n        description: \"Source-system time held as a string, format 'yyyy-MM-dd HH:mm:ss'. Parse with TIME_PARSE before using time functions.\"\n      - name: k8s_namespace\n        type: VARCHAR\n        description: \"Kubernetes namespace.\"\n      - name: heap_used_mb\n        type: BIGINT\n        description: \"Heap in use when the record was written, in MB.\"\n      - name: trace_id\n        type: VARCHAR\n        description: \"Distributed trace identifier. High cardinality.\"\n      - name: pod_name\n        type: VARCHAR\n        description: \"Pod the record came from.\"\n      - name: env\n        type: VARCHAR\n        description: \"Deployment environment.\"\n    lookups:\n      - name: service_owner\n        key: service_name\n        description: \"Maps a service to the team that owns it.\""}, {"role": "user", "content": "Earliest ten log records in the table"}, {"role": "assistant", "content": "SELECT __time AS \"event_time\",\n       gc_pause_ms AS \"gc_pause_ms\"\nFROM app_logs_daily\nORDER BY __time\nLIMIT 10"}], "trap": null, "gates": {"must_contain": ["ORDER BY __time"], "expect_rows": true}}, {"id": "tr_0216", "format": "json", "cluster": "mvd", "template": "mv_filter_only", "schemas": ["food_delivery_v2"], "distractors": [], "turns": [{"role": "system", "content": "Given a schema, emit a single Apache Druid SQL query. No explanation."}, {"role": "user", "content": "{\n  \"dialect\": \"druid\",\n  \"tables\": [\n    {\n      \"table\": \"food_delivery_daily\",\n      \"columns\": [\n        {\n          \"name\": \"__time\",\n          \"type\": \"TIMESTAMP\",\n          \"description\": \"Time the order was placed. Becomes `__time`, the only TIMESTAMP column.\"\n        },\n        {\n          \"name\": \"items_count\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Line items in the basket.\"\n        },\n        {\n          \"name\": \"courier_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Assigned courier.\"\n        },\n        {\n          \"name\": \"customer_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Customer identifier. High cardinality.\"\n        },\n        {\n          \"name\": \"delivery_fee\",\n          \"type\": \"DOUBLE\",\n          \"description\": \"Delivery fee charged.\"\n        },\n        {\n          \"name\": \"order_channel\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Where the order came from.\"\n        },\n        {\n          \"name\": \"fulfilment\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"How the order reached the customer.\"\n        },\n        {\n          \"name\": \"prep_minutes\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Minutes the kitchen took.\"\n        },\n        {\n          \"name\": \"promo_code\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Promotion applied, or none.\"\n        },\n        {\n          \"name\": \"recorded_at\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Source-system time held as a string, format 'yyyy-MM-dd HH:mm:ss'. Parse with TIME_PARSE before using time functions.\"\n        },\n        {\n          \"name\": \"restaurant_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Restaurant fulfilling the order.\"\n        },\n        {\n          \"name\": \"dietary_flags\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Multi-value dimension. Dietary labels across the basket.\"\n        }\n      ]\n    }\n  ]\n}\n\nTotal prep_minutes per dietary_flags value, restricted to vegan, halal"}, {"role": "assistant", "content": "SELECT MV_FILTER_ONLY(dietary_flags, ARRAY['vegan', 'halal']) AS \"tag\",\n       SUM(prep_minutes) AS \"total_prep_minutes\"\nFROM food_delivery_daily\nGROUP BY 1\nORDER BY 2 DESC"}], "trap": null, "gates": {"must_contain": ["MV_FILTER_ONLY"], "expect_rows": true}}, {"id": "tr_0526", "format": "pipe_table", "cluster": "string_ops", "template": "so_substring", "schemas": ["orders"], "distractors": ["food_delivery_v2", "network_flows_v1"], "turns": [{"role": "system", "content": "You answer questions with Apache Druid SQL. Return the bare query."}, {"role": "user", "content": "**food_delivery_daily** (Food delivery, 900 rows)\n\n| Column | Type | Notes |\n| --- | --- | --- |\n| __time | TIMESTAMP | Time the order was placed. Becomes `__time`, the only TIMESTAMP column. |\n| fulfilment | VARCHAR | How the order reached the customer. |\n| recorded_at | VARCHAR | Source-system time held as a string, format 'yyyy-MM-dd HH:mm:ss'. Parse with TIME_PARSE before using time functions. |\n| items_count | BIGINT | Line items in the basket. |\n| prep_minutes | BIGINT | Minutes the kitchen took. |\n| customer_id | VARCHAR | Customer identifier. High cardinality. |\n| delivery_fee | DOUBLE | Delivery fee charged. |\n| order_channel | VARCHAR | Where the order came from. |\n| courier_id | VARCHAR | Assigned courier. |\n| restaurant_id | VARCHAR | Restaurant fulfilling the order. |\n| dietary_flags | VARCHAR | Multi-value dimension. Dietary labels across the basket. |\n| promo_code | VARCHAR | Promotion applied, or none. |\n\n**ds_orders** (E-commerce, 500 rows)\n\n| Column | Type | Notes |\n| --- | --- | --- |\n| discount_usd | DOUBLE | Discount applied to the line in USD. |\n| channel | VARCHAR | Sales channel: web, ios, android, partner. |\n| __time | TIMESTAMP | Order placement time. Becomes `__time`. |\n| payment_method | VARCHAR | Payment instrument: card, paypal, giftcard, invoice. |\n| customer_id | VARCHAR | Customer identifier. |\n| unit_price_usd | DOUBLE | Price per unit in USD. |\n| ship_country | VARCHAR | Destination country code. |\n| order_id | VARCHAR | Order identifier. |\n| quantity | BIGINT | Units ordered. |\n| product_sku | VARCHAR | Stock keeping unit. Joins to ds_products.sku. |\n\n**networkFlowsRaw** (Network telemetry, 900 rows)\n\n| Column | Type | Notes |\n| --- | --- | --- |\n| tcpFlags | VARCHAR | Flag combination seen on the flow. |\n| protocol | VARCHAR | IP protocol. |\n| srcAddr | VARCHAR | Source address. High cardinality. |\n| exporter | VARCHAR | Device that exported the flow. |\n| recordedAt | VARCHAR | Source-system time held as an ISO-8601 string, format \"yyyy-MM-dd'T'HH:mm:ss'Z'\". Parse with TIME_PARSE and an explicit format. |\n| direction | VARCHAR | Flow direction relative to the site. |\n| packets | BIGINT | Packets in the flow. |\n| dstPort | BIGINT | Destination port. |\n| bytes | BIGINT | Bytes in the flow. |\n| __time | TIMESTAMP | Time the flow was first observed. Becomes `__time`, the only TIMESTAMP column. |\n\nGroup orders by the first three characters of ship_country"}, {"role": "assistant", "content": "SELECT SUBSTRING(ship_country, 1, 3) AS \"ship_country_prefix\",\n       COUNT(*) AS \"record_count\"\nFROM ds_orders\nGROUP BY 1\nORDER BY 2 DESC"}], "trap": null, "gates": {"must_contain": ["SUBSTRING"], "expect_rows": true}}, {"id": "tr_0464", "format": "verbose_rules", "cluster": "null_math", "template": "nm_ratio_metrics", "schemas": ["ride_hailing_v1"], "distractors": [], "turns": [{"role": "system", "content": "You are a senior analytics engineer who writes Apache Druid SQL.\n\nRules:\n1. Return exactly one SQL query. No prose, no markdown fences, no trailing semicolon.\n2. `__time` is the only TIMESTAMP column. All time filtering goes through it.\n3. Double-quote every output alias.\n4. GROUP BY and ORDER BY refer to output positions by ordinal.\n5. Relative dates resolve against CURRENT_TIMESTAMP.\n6. Prefer Druid's approximate aggregators over exact ones.\n\n## Available tables\n\n### rideHailingRaw - Ride hailing\n- driverId :: VARCHAR - Driver identifier.\n- fareLocal :: DOUBLE - Fare charged in local currency.\n- city :: VARCHAR - Operating city.\n- durationMin :: BIGINT - Trip duration in minutes.\n- distanceKm :: DOUBLE - Trip distance in kilometres.\n- __time :: TIMESTAMP - Time the trip began. Becomes `__time`, the only TIMESTAMP column.\n- paymentMethod :: VARCHAR - How the rider paid.\n- cancelReason :: VARCHAR - Why the trip ended early, or none.\n- recordedAt :: VARCHAR - Source-system time held as an ISO-8601 string, format \"yyyy-MM-dd'T'HH:mm:ss'Z'\". Parse with TIME_PARSE and an explicit format.\n- productTier :: VARCHAR - Vehicle tier booked."}, {"role": "user", "content": "Ratio of fareLocal to distanceKm per day for the last 7 days"}, {"role": "assistant", "content": "SELECT TIME_FLOOR(__time, 'P1D') AS \"day\",\n       SUM(fareLocal) * 1.0 / NULLIF(SUM(distanceKm), 0) AS \"ratio\"\nFROM rideHailingRaw\nWHERE __time >= CURRENT_TIMESTAMP - INTERVAL '7' DAY\nGROUP BY 1\nORDER BY 1"}], "trap": null, "gates": {"must_contain": ["NULLIF"], "expect_rows": true}}, {"id": "tr_0632", "format": "no_system", "cluster": "approx_agg", "template": "aa_p95", "schemas": ["food_delivery_v0"], "distractors": ["workforce_v1"], "turns": [{"role": "user", "content": "Table workforceRaw:\n  - __time (TIMESTAMP) - Scheduled start of the shift\n  - siteCode (VARCHAR) - Site the shift was worked at\n  - attendance (VARCHAR) - How the shift resolved\n  - recordedAt (VARCHAR) - Source-system time held as an ISO-8601 string, format \"yyyy-MM-dd'T'HH:mm:ss'Z'\"\n  - workedMinutes (BIGINT) - Minutes actually worked\n  - employeeRef (VARCHAR) - Employee reference\n  - scheduledMinutes (BIGINT) - Minutes rostered\n  - overtimeMinutes (BIGINT) - Minutes beyond the roster\n  - shiftPattern (VARCHAR) - Pattern the shift belongs to\n  - role (VARCHAR) - Role worked\n\nTable ds_food_delivery:\n  - __time (TIMESTAMP) - Time the order was placed\n  - courier_id (VARCHAR) - Assigned courier\n  - delivery_fee (DOUBLE) - Delivery fee charged\n  - customer_id (VARCHAR) - Customer identifier\n  - items_count (BIGINT) - Line items in the basket\n  - cuisine (VARCHAR) - Kitchen category\n  - restaurant_id (VARCHAR) - Restaurant fulfilling the order\n  - dietary_flags (VARCHAR) - Multi-value dimension. Dietary labels across the basket\n  - received_at_ms (BIGINT) - Upstream receive time as epoch MILLISECONDS\n  - promo_code (VARCHAR) - Promotion applied, or none\n  - prep_minutes (BIGINT) - Minutes the kitchen took\n  - fulfilment (VARCHAR) - How the order reached the customer\n  - basket_total (DOUBLE) - Order subtotal before fees\n  - order_channel (VARCHAR) - Where the order came from\n\nWrite a Druid SQL query: 99th percentile of delivery_fee, last week"}, {"role": "assistant", "content": "SELECT APPROX_QUANTILE_DS(delivery_fee, 0.99) AS \"p99_delivery_fee\"\nFROM ds_food_delivery\nWHERE __time >= CURRENT_TIMESTAMP - INTERVAL '7' DAY"}], "trap": {"naive_sql": "SELECT PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY delivery_fee) AS p95 FROM ds_food_delivery", "expect": "INVALID"}, "gates": {"must_contain": ["APPROX_QUANTILE_DS"], "expect_rows": true}}, {"id": "tr_0259", "format": "question_first", "cluster": "timestamp_literal", "template": "tl_day_of", "schemas": ["food_delivery_v1"], "distractors": [], "turns": [{"role": "system", "content": "Apache Druid SQL assistant. Reply with SQL only."}, {"role": "user", "content": "Counts per orderChannel for the single day 2026-08-14\n\nSchema:\nfoodDeliveryRaw\n  __time TIMESTAMP   Time the order was placed\n  recordedAt VARCHAR   Source-system time held as an ISO-8601 string, format \"yyyy-MM-dd'T'HH:mm:ss'Z'\"\n  cuisine VARCHAR   Kitchen category\n  orderChannel VARCHAR   Where the order came from\n  deliveryFee DOUBLE   Delivery fee charged\n  basketTotal DOUBLE   Order subtotal before fees\n  restaurantId VARCHAR   Restaurant fulfilling the order\n  fulfilment VARCHAR   How the order reached the customer\n  prepMinutes BIGINT   Minutes the kitchen took\n  customerId VARCHAR   Customer identifier"}, {"role": "assistant", "content": "SELECT orderChannel AS \"orderChannel\",\n       COUNT(*) AS \"record_count\"\nFROM foodDeliveryRaw\nWHERE __time >= TIMESTAMP '2026-08-14 00:00:00'\n  AND __time < TIMESTAMP '2026-08-15 00:00:00'\nGROUP BY 1\nORDER BY 2 DESC"}], "trap": null, "gates": {"must_contain": ["TIMESTAMP '"], "expect_rows": true}}, {"id": "tr_0247", "format": "sample_rows", "cluster": "timestamp_literal", "template": "tl_between", "schemas": ["inventory_v2"], "distractors": [], "turns": [{"role": "system", "content": "Translate the question into one Apache Druid SQL query. Output SQL only."}, {"role": "user", "content": "Table: inventory_daily\nColumns: recorded_at VARCHAR, shelf_life_days BIGINT, storage_zone VARCHAR, operator_ref VARCHAR, unit_cost DOUBLE, uom VARCHAR, warehouse_code VARCHAR, __time TIMESTAMP, item_code VARCHAR, reason_code VARCHAR\nSample rows:\n  2026-08-19 03:49:26 | 648 | hazmat | 000000002f | 10.434 | each | wh-bri | 2026-08-19 03:50:13 | SKU-0073 | customer_return\n  2026-08-20 22:48:38 | 540 | hazmat | 0000000010 | 148.687 | each | wh-man | 2026-08-20 22:49:31 | SKU-0054 | damaged\n\nQuestion: Average shelf_life_days between 2026-08-06 and 2026-08-16"}, {"role": "assistant", "content": "SELECT AVG(shelf_life_days) AS \"avg_shelf_life_days\"\nFROM inventory_daily\nWHERE __time >= TIMESTAMP '2026-08-06 00:00:00'\n  AND __time < TIMESTAMP '2026-08-16 00:00:00'"}], "trap": null, "gates": {"must_contain": ["TIMESTAMP '"], "expect_rows": true}}, {"id": "tr_0563", "format": "compact", "cluster": "relative_time", "template": "rt_prior_window", "schemas": ["energy_meter_v2"], "distractors": ["payment_gateway_v1"], "turns": [{"role": "system", "content": "Apache Druid SQL. Output the query only.\n\nenergy_meter_daily(__time:TIMESTAMP, meter_id:VARCHAR, quality_flag:VARCHAR, recorded_at:VARCHAR, premise_type:VARCHAR, power_factor:DOUBLE, voltage_v:DOUBLE, grid_zone:VARCHAR, account_ref:VARCHAR, kwh_exported:DOUBLE)\nlookup zone_operator on grid_zone\npaymentGatewayRaw(__time:TIMESTAMP, gatewayJson:VARCHAR, processingMs:BIGINT, amountMinor:BIGINT, authResult:VARCHAR, declineReason:VARCHAR, pspReference:VARCHAR, riskScore:BIGINT, merchantId:VARCHAR, recordedAt:VARCHAR, cardScheme:VARCHAR)"}, {"role": "user", "content": "Count meter readings per premise_type for the week before last"}, {"role": "assistant", "content": "SELECT premise_type AS \"premise_type\",\n       COUNT(*) AS \"record_count\"\nFROM energy_meter_daily\nWHERE __time >= CURRENT_TIMESTAMP - INTERVAL '14' DAY\n  AND __time < CURRENT_TIMESTAMP - INTERVAL '7' DAY\nGROUP BY 1\nORDER BY 2 DESC"}], "trap": null, "gates": {"must_contain": ["CURRENT_TIMESTAMP"], "expect_rows": true}}, {"id": "tr_0287", "format": "druid_native", "cluster": "time_shift", "template": "sh_week_over_week", "schemas": ["ml_inference_v1"], "distractors": [], "turns": [{"role": "system", "content": "Apache Druid 35.0.0. Column types below are Druid native types (LONG/STRING/DOUBLE map to BIGINT/VARCHAR/DOUBLE in SQL).\nAnswer with a single query.\n\ndatasource: mlInferenceRaw\n  __time                   TIMESTAMP\n  modelName                STRING\n  accelerator              STRING\n  modelVersion             STRING\n  requestSource            STRING\n  inputTokens              LONG\n  requestId                STRING\n  inferenceMs              DOUBLE\n  recordedAt               STRING\n  queueMs                  DOUBLE"}, {"role": "user", "content": "Daily inferenceMs for this week shown next to the day one week earlier"}, {"role": "assistant", "content": "SELECT TIME_FLOOR(__time, 'P1D') AS \"day\",\n       SUM(inferenceMs) AS \"total_inferenceMs\",\n       TIME_SHIFT(TIME_FLOOR(__time, 'P1D'), 'P1W', -1) AS \"week_earlier\"\nFROM mlInferenceRaw\nWHERE __time >= CURRENT_TIMESTAMP - INTERVAL '7' DAY\nGROUP BY 1\nORDER BY 1"}], "trap": null, "gates": {"must_contain": ["TIME_SHIFT"], "expect_rows": true}}, {"id": "tr_0543", "format": "bare", "cluster": "string_ops", "template": "so_like", "schemas": ["products"], "distractors": ["clinical_telemetry_v0"], "turns": [{"role": "system", "content": "Druid SQL.\nds_clinical_telemetry: __time, received_at_ms, shift, signal_quality, battery_pct, alarm_state, value, ward, device_model, observation_type, bed_id, encounter_ref\nds_products: __time, supplier_country, category, brand, weight_grams, product_name, list_price_usd, sku"}, {"role": "user", "content": "Count products whose category matches 'elect%'"}, {"role": "assistant", "content": "SELECT category AS \"category\",\n       COUNT(*) AS \"record_count\"\nFROM ds_products\nWHERE category LIKE 'elect%'\nGROUP BY 1\nORDER BY 2 DESC"}], "trap": null, "gates": {"must_contain": ["LIKE"], "expect_rows": true}}], "families": {"web_events": {"domain": "Web / product analytics", "variant": "handwritten", "n": 1}, "ad_impressions": {"domain": "Ad tech", "variant": "handwritten", "n": 1}, "iot_readings": {"domain": "Industrial IoT", "variant": "handwritten", "n": 1}, "orders": {"domain": "E-commerce", "variant": "handwritten", "n": 1}, "products": {"domain": "E-commerce", "variant": "handwritten", "n": 1}, "fin_txn": {"domain": "Payments / fintech", "variant": "handwritten", "n": 1}, "sec_alerts": {"domain": "Security operations", "variant": "handwritten", "n": 1}, "game_sessions": {"domain": "Gaming", "variant": "handwritten", "n": 1}, "telco_cdr": {"domain": "Telecommunications", "variant": "handwritten", "n": 1}, "app_logs": {"domain": "Application observability", "variant": "v0", "n": 3}, "api_gateway": {"domain": "API gateway traffic", "variant": "v0", "n": 3}, "cdn_edge": {"domain": "CDN edge delivery", "variant": "v0", "n": 3}, "streaming_media": {"domain": "Video streaming", "variant": "v0", "n": 3}, "ride_hailing": {"domain": "Ride hailing", "variant": "v0", "n": 3}, "food_delivery": {"domain": "Food delivery", "variant": "v0", "n": 3}, "logistics": {"domain": "Freight logistics", "variant": "v0", "n": 3}, "energy_meter": {"domain": "Smart metering", "variant": "v0", "n": 3}, "clinical_telemetry": {"domain": "Clinical device telemetry", "variant": "v0", "n": 2}, "workforce": {"domain": "Workforce management", "variant": "v0", "n": 2}, "email_campaigns": {"domain": "Marketing automation", "variant": "v0", "n": 3}, "inventory": {"domain": "Warehouse inventory", "variant": "v0", "n": 3}, "crypto_trades": {"domain": "Crypto exchange", "variant": "v0", "n": 3}, "support_tickets": {"domain": "Customer support", "variant": "v0", "n": 3}, "fleet_gps": {"domain": "Fleet telematics", "variant": "v0", "n": 3}, "payment_gateway": {"domain": "Payments processing", "variant": "v0", "n": 3}, "ml_inference": {"domain": "ML serving", "variant": "v0", "n": 3}, "retail_pos": {"domain": "Retail point of sale", "variant": "v0", "n": 3}, "network_flows": {"domain": "Network telemetry", "variant": "v0", "n": 3}, "dim_drivers": {"domain": "Ride hailing", "variant": "dim", "n": 1}, "dim_carriers": {"domain": "Freight logistics", "variant": "dim", "n": 1}, "dim_warehouses": {"domain": "Warehouse inventory", "variant": "dim", "n": 1}, "dim_segments": {"domain": "Marketing automation", "variant": "dim", "n": 1}, "dim_stores": {"domain": "Retail point of sale", "variant": "dim", "n": 1}}, "traps": {"total": 375, "invalid": 358, "different": 17}, "n_templates": 106, "rows_ingested": 54003}</script>
+<script>
+const D = JSON.parse(document.getElementById("data").textContent);
+const S = D.stats, TR = S.train, VA = S.val;
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const num = n => n.toLocaleString();
+
+document.getElementById("hero").innerHTML = [
+  [num(TR.records), "training examples"],
+  [num(VA.records), "validation examples"],
+  ["69", "datasources"],
+  [String(D.n_templates), "query templates"],
+  [num(D.traps.total), "traps validated"],
+  ["100%", "gates passed", true],
+].map(([v, l, ok]) => '<div><b class="' + (ok ? "ok" : "") + '">' + v + '</b><span>' + l + '</span></div>').join("");
+
+document.getElementById("rows").textContent = num(D.rows_ingested);
+document.getElementById("gateresult").innerHTML =
+  '<b>' + num(TR.records + VA.records) + ' of ' + num(TR.records + VA.records) +
+  ' examples passed all four gates</b>, along with ' + num(D.traps.total) + ' trap queries &mdash; ' +
+  num(D.traps.invalid) + ' proved to be rejected outright and ' + num(D.traps.different) +
+  ' proved to run and return the wrong answer. Six failures surfaced along the way; each one was a bug in a template or a wrong assumption about the dialect, and each was fixed rather than dropped.';
+
+function bars(el, tr, va, order){
+  const max = Math.max(...order.map(k => (tr[k] || 0)));
+  el.innerHTML = order.map(k => {
+    const t = tr[k] || 0, v = va[k] || 0;
+    return '<div class="bar"><span class="n" title="' + k + '">' + k + '</span>' +
+      '<span class="t"><i style="width:' + (100 * t / max) + '%"></i>' +
+      '<i class="v" style="width:' + (100 * v / max) + '%"></i></span>' +
+      '<span class="v">' + t + ' / ' + v + '</span></div>';
+  }).join("");
+}
+bars(document.getElementById("fmtbars"), TR.formats, VA.formats,
+     Object.keys(TR.formats).sort());
+const clusters = Object.keys(TR.clusters).sort((a, b) => TR.clusters[b] - TR.clusters[a]);
+bars(document.getElementById("clbars"), TR.clusters, VA.clusters, clusters);
+document.getElementById("clsub").innerHTML =
+  D.n_templates + ' templates across ' + clusters.length + ' quirk clusters. A template binds to ' +
+  '<em>roles</em> &mdash; a low-cardinality dimension, a numeric measure, the epoch-seconds column &mdash; ' +
+  'never to a column name, so one template renders against every schema that has the roles it needs.';
+
+const held = new Set(S.holdout_families);
+const heldFams = Object.keys(D.families).filter(f => held.has(f)).sort();
+const trainFams = Object.keys(D.families).filter(f => !held.has(f)).sort();
+document.getElementById("split").innerHTML =
+  '<div class="pane"><h3>Training <em>' + num(TR.records) + ' examples</em></h3>' +
+  '<p>' + Object.keys(TR.prompt_tables).length + ' datasources across ' + trainFams.length +
+  ' families, including all nine hand-written schemas and the 64 hand-authored examples from batch 01. ' +
+  TR.with_distractor_tables + ' prompts carry tables the query never touches.</p>' +
+  '<div class="chips">' + trainFams.map(f => '<span class="chip">' + f + '</span>').join("") + '</div></div>' +
+  '<div class="pane"><h3>Validation <em>' + num(VA.records) + ' examples</em></h3>' +
+  '<p>' + Object.keys(VA.prompt_tables).length + ' datasources, sharing <b>zero</b> tables with training. ' +
+  'JSON strings, a lookup, a multi-value dimension, a join and a plain numeric domain are all represented, ' +
+  'so every cluster can still be measured.</p>' +
+  '<div class="chips">' + heldFams.map(f => '<span class="chip held">' + f + '</span>').join("") + '</div></div>';
+
+function record(i){
+  const s = D.samples[i];
+  document.querySelectorAll(".tab").forEach((t, j) => t.setAttribute("aria-selected", j === i));
+  const meta = [["format", s.format], ["cluster", s.cluster], ["template", s.template],
+                ["tables", s.schemas.join(" + ")]];
+  if (s.distractors.length) meta.push(["distractors", s.distractors.join(" + ")]);
+  const turns = s.turns.map(t =>
+    '<div class="turn ' + t.role + '"><div class="r"><i></i><span>' + t.role + '</span></div>' +
+    '<pre>' + esc(t.content) + '</pre></div>').join("");
+  const trap = s.trap ? '<div class="trap">Trap &mdash; validated to ' +
+    (s.trap.expect === "INVALID" ? "be rejected" : "run and return the wrong answer") +
+    ', never shown to the model:<b>' + esc(s.trap.naive_sql) + '</b></div>' : "";
+  document.getElementById("rec").innerHTML = '<article class="rec"><div class="hd">' +
+    meta.map(([k, v]) => '<span class="k">' + k + ' <b>' + esc(v) + '</b></span>').join("") +
+    '</div>' + turns + trap + '</article>';
+}
+document.getElementById("tabs").innerHTML = D.samples.map((s, i) =>
+  '<button class="tab" role="tab" aria-selected="false" onclick="record(' + i + ')">' +
+  s.format + '</button>').join("");
+record(0);
+</script>

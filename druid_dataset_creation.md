@@ -72,6 +72,8 @@ Executed against the harness cluster. These are the rules the dataset exists to 
 | `UNNEST(STRING_TO_MV(col, ','))` | `Cannot apply 'UNNEST' to arguments of type 'UNNEST(<VARCHAR>)'`. Use `UNNEST(STRING_TO_ARRAY(col, ','))`. |
 | `MV_TO_ARRAY(<expression>)` | Only accepts a bare column identifier, not an expression. |
 | `LOOKUP(col, 'name')` for an unregistered lookup | `Lookup [name] not found` — fails at plan time. |
+| A column literally named `value` or `language` written unquoted | Syntax error. Reserved words are reserved as *identifiers* too, not just as aliases: `AVG("value")`. Probing all 493 column names across the 69 datasources turned up exactly these two. |
+| `MAX(string_col)` / `MIN(string_col)` | `Aggregation [MAX] does not support type [STRING]`. Use `LATEST(col, 64)` / `EARLIEST(col, 64)`. |
 | Nested aggregates, `TOP n`, `DISTINCT ON` | Rejected. |
 
 **Functions that do not exist in Druid**, each a clean contrastive pair with a working replacement:
@@ -96,6 +98,7 @@ These are the dangerous ones, because "it returned VALID" does not catch them.
 | `JSON_VALUE(json_string_col, '$.region')` | **VALID, returns NULL for every row.** Must be `JSON_VALUE(PARSE_JSON(col), '$.region')` or `TRY_PARSE_JSON`. |
 | `__time >= '2024-01-01'` (bare string) | VALID via implicit cast, but fragile and ambiguous. Prefer a `TIMESTAMP` literal. |
 | Filtering/sorting an epoch or ISO-string column with `BETWEEN` timestamps | VALID; compares lexicographically or numerically, not temporally. Must go through `MILLIS_TO_TIMESTAMP` / `TIME_PARSE`. |
+| `JSON_VALUE(PARSE_JSON(col), '$.flag') = 'true'` where the JSON holds a *boolean* | VALID, matches nothing. `JSON_VALUE` renders JSON booleans as `'1'` / `'0'`, not `'true'` / `'false'`. The seed data avoids JSON booleans for this reason. |
 
 ## Refuted — do NOT teach these as restrictions
 
@@ -105,6 +108,7 @@ Claims that were in an earlier draft of this document and are **false** on 35.0.
 - **"Druid has broad join restrictions."** Largely obsolete at 35.0.0. `INNER`, `LEFT`, `RIGHT`, `FULL OUTER`, non-equi joins, `UNION` / `UNION ALL`, `IN`-subqueries and correlated subqueries all plan and execute. Remaining concerns are performance, not validity — and performance is not something the harness can verify, so it does not belong in this dataset.
 - **"Trailing semicolons are rejected."** They are accepted.
 - **"`HAVING` cannot reference a select alias."** It can, and so can `ORDER BY`. Only `GROUP BY` cannot.
+- **"A string timestamp column must go through `TIME_PARSE`."** `TIME_PARSE` is the explicit, format-safe form and is what this dataset teaches, but `CAST(str AS TIMESTAMP)` also works and returns identical results for both `'yyyy-MM-dd HH:mm:ss'` and `"yyyy-MM-dd'T'HH:mm:ss'Z'"`. It is an alternative, not a trap — a generated trap that assumed otherwise failed validation and was replaced.
 
 Also confirmed working, so they are safe to teach: `TIME_FLOOR`, `TIME_CEIL`, `TIME_SHIFT`, `TIME_EXTRACT`, `TIME_PARSE`, `TIME_FORMAT` (incl. timezone args), `TIME_IN_INTERVAL`, `DATE_TRUNC`, `FLOOR(x TO HOUR)`, `MILLIS_TO_TIMESTAMP` / `TIMESTAMP_TO_MILLIS`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `APPROX_QUANTILE_DS`, `LATEST` / `EARLIEST` / `LATEST_BY`, `MV_CONTAINS`, `MV_FILTER_ONLY`, `ARRAY_CONTAINS`, `SAFE_DIVIDE`, `NVL`, `IFNULL`, `COALESCE`, `FILTER (WHERE …)`, `HAVING`, window functions, `QUALIFY`, `GROUPING SETS`, `ROLLUP`, CTEs, `LIMIT … OFFSET`, `TIMESTAMPADD` / `TIMESTAMPDIFF`, `REGEXP_LIKE`, `PARSE_JSON` / `TRY_PARSE_JSON`, `LOOKUP`, `SAFE_DIVIDE`.
 
@@ -114,13 +118,14 @@ Settled up front so the dataset is internally consistent:
 
 | Decision | Choice |
 | --- | --- |
-| Prompt template | Short fixed preamble + schema block in `system`; assistant emits bare SQL, no fence, no prose |
+| Prompt template | **Twelve** formats (`dataset/prompt_formats.py`), sampled evenly, so the model learns to read a schema rather than memorise one layout. The assistant turn never varies: bare SQL, no fence, no prose. `md_sections` is the one `prompt.py` serves. |
 | Type vocabulary | Druid SQL types (`TIMESTAMP`/`VARCHAR`/`BIGINT`/`DOUBLE`/`FLOAT`) |
 | Output aliases | **Always** double-quoted. Never wrong, and it saves the model from memorising Druid's reserved-word list |
 | `GROUP BY` / `ORDER BY` | Ordinals, never select aliases (`GROUP BY` cannot resolve them) |
 | Relative time | `CURRENT_TIMESTAMP` arithmetic; never a hardcoded anchor date |
 | Counts and percentiles | Druid-idiomatic approximate by default: `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE_DS` |
-| Schema shape | ~75% single wide table, ~25% with 2–3 tables and some genuine cross-datasource joins |
+| Schema shape | 69 datasources from 19 domain families x 3 variants, plus 9 hand-written and 5 dimension tables. Variants differ in naming convention, column subset and time encoding. |
+| Train / validation split | **Schema-disjoint by family.** Six whole families are held out; no validation schema shares a column vocabulary with a training one. |
 | Multi-value dimensions | **In scope** — real MVDs, ingested via an `ARRAY<STRING>` signature and `ARRAY_TO_MV` |
 | Lookups | **In scope** — registered via the coordinator API; allow 2–4 min to propagate to the Broker |
 | Nested JSON (`COMPLEX<json>`) | Out of scope. JSON-as-string via `PARSE_JSON` covers the need |

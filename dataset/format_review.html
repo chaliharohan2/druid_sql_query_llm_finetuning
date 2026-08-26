@@ -1,0 +1,1136 @@
+<title>Druid Prompt Formats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:ital,wght@0,400;0,500;0,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --ground:#EFF2F2; --card:#FFFFFF; --sunk:#F6F8F8;
+  --ink:#131A1B; --body:#2B3536; --muted:#5E6C6E; --faint:#8B9799;
+  --rule:#DCE3E3; --rule-hi:#C3CFCF;
+  --accent:#0B6A6A; --accent-soft:#DCEDEB; --accent-ink:#075252;
+  --warn:#8A5610; --warn-soft:#F5E9D6;
+  --sys:#4B4E9B; --usr:#0B6A6A;
+  --shadow:0 1px 2px rgba(19,26,27,.05), 0 6px 18px -10px rgba(19,26,27,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0D1213; --card:#151B1C; --sunk:#101617;
+    --ink:#E7ECEC; --body:#C3CCCD; --muted:#8D9A9C; --faint:#6B7779;
+    --rule:#242D2E; --rule-hi:#33403F;
+    --accent:#46ADA5; --accent-soft:#12302E; --accent-ink:#7FCFC8;
+    --warn:#D5A159; --warn-soft:#33270F;
+    --sys:#8C90E0; --usr:#46ADA5;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D1213; --card:#151B1C; --sunk:#101617;
+  --ink:#E7ECEC; --body:#C3CCCD; --muted:#8D9A9C; --faint:#6B7779;
+  --rule:#242D2E; --rule-hi:#33403F;
+  --accent:#46ADA5; --accent-soft:#12302E; --accent-ink:#7FCFC8;
+  --warn:#D5A159; --warn-soft:#33270F;
+  --sys:#8C90E0; --usr:#46ADA5;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--body);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15.5px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:"Bricolage Grotesque","Public Sans",sans-serif;color:var(--ink);
+  text-wrap:balance;margin:0;font-weight:700;letter-spacing:-.02em;line-height:1.14}
+code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+a{color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+.mast{border-bottom:1px solid var(--rule);background:var(--card)}
+.mast .wrap{padding-top:52px;padding-bottom:34px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+  font-weight:600;font-family:"JetBrains Mono",monospace}
+h1{font-size:clamp(34px,5.2vw,52px)}
+.lede{max-width:64ch;font-size:17px;color:var(--body);margin:0}
+.lede strong{color:var(--ink);font-weight:600}
+.statline{display:flex;flex-wrap:wrap;border:1px solid var(--rule);border-radius:3px;
+  overflow:hidden;background:var(--sunk);width:fit-content}
+.stat{padding:11px 20px;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:21px;color:var(--ink);
+  line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+
+.casebar{position:sticky;top:0;z-index:20;background:var(--ground);border-bottom:1px solid var(--rule)}
+.casebar .wrap{display:flex;gap:6px;align-items:stretch;overflow-x:auto;padding-top:8px;padding-bottom:8px}
+.tab{appearance:none;border:1px solid transparent;background:transparent;cursor:pointer;
+  font:inherit;color:var(--muted);padding:8px 14px;border-radius:3px;white-space:nowrap;
+  display:flex;flex-direction:column;gap:2px;text-align:left;transition:background .12s,color .12s}
+.tab .t{font-weight:600;font-size:14px}
+.tab .s{font-size:11px;font-family:"JetBrains Mono",monospace;color:var(--faint)}
+.tab:hover{background:var(--sunk);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--rule-hi)}
+.tab[aria-selected="true"] .s{color:var(--accent-ink);opacity:.75}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.casehead{padding:34px 0 6px}
+.casehead h2{font-size:24px;margin-bottom:8px}
+.casehead p{margin:0 0 18px;max-width:72ch;color:var(--muted)}
+.casehead code{font-size:12.5px;color:var(--accent)}
+.constant{background:var(--card);border:1px solid var(--rule);border-radius:4px;
+  box-shadow:var(--shadow);overflow:hidden}
+.constant .ch{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding:12px 18px;border-bottom:1px solid var(--rule);background:var(--sunk)}
+.constant .ch b{font-family:"Bricolage Grotesque",sans-serif;font-size:14px;color:var(--ink)}
+.constant .ch span{font-size:12.5px;color:var(--muted)}
+.constant pre{margin:0;padding:16px 18px;font-size:13px;line-height:1.62;overflow-x:auto;color:var(--ink)}
+.kw{color:var(--sys);font-weight:600}
+.str{color:var(--accent)}
+.fn{font-weight:600}
+
+.cols{display:grid;grid-template-columns:230px 1fr;gap:34px;align-items:start;padding:26px 0 60px}
+@media (max-width:900px){.cols{grid-template-columns:1fr;gap:20px}.rail{display:none}}
+.rail{position:sticky;top:64px}
+.rail h3{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);
+  font-family:"JetBrains Mono",monospace;font-weight:600;margin-bottom:10px}
+.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rail a{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;
+  padding:6px 8px;border-radius:3px;text-decoration:none;color:var(--body);font-size:13px}
+.rail a:hover{background:var(--card);color:var(--ink)}
+.rail a.off{color:var(--faint)}
+.rail .wbar{width:52px;height:5px;background:var(--rule);border-radius:2px;overflow:hidden}
+.rail .wbar i{display:block;height:100%;background:var(--accent);opacity:.8}
+.rail a.off .wbar i{background:var(--warn);opacity:.55}
+.railnote{margin-top:14px;font-size:11.5px;color:var(--faint);line-height:1.5;
+  padding-top:12px;border-top:1px solid var(--rule)}
+
+.stack{display:flex;flex-direction:column;gap:20px;min-width:0}
+.spec{background:var(--card);border:1px solid var(--rule);border-radius:4px;
+  box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:78px}
+.spec.off{opacity:.62}
+.spec>header{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;
+  padding:14px 18px 10px}
+.spec h3{font-size:16px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.spec h3 .id{font-family:"JetBrains Mono",monospace;font-size:13.5px;color:var(--accent);font-weight:600}
+.spec h3 .doc{font-family:"Public Sans",sans-serif;font-weight:400;font-size:13px;color:var(--muted);
+  letter-spacing:0}
+.pct{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted);
+  font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:3px}
+.pct b{color:var(--ink);font-weight:600}
+.caps{display:flex;gap:5px;flex-wrap:wrap;padding:0 18px 12px}
+.cap{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.04em;
+  padding:2px 7px;border-radius:2px;border:1px solid var(--rule-hi);color:var(--faint)}
+.cap.on{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink)}
+.blocked{display:flex;gap:9px;align-items:flex-start;margin:0 18px 12px;padding:9px 12px;
+  background:var(--warn-soft);border-left:2px solid var(--warn);border-radius:0 3px 3px 0;
+  font-size:12.5px;color:var(--warn)}
+.blocked b{font-family:"JetBrains Mono",monospace}
+.turn{border-top:1px solid var(--rule)}
+.turn>.r{display:flex;align-items:center;gap:8px;padding:8px 18px;background:var(--sunk)}
+.turn>.r i{width:6px;height:6px;border-radius:50%;background:var(--usr);font-style:normal}
+.turn.system>.r i{background:var(--sys)}
+.turn>.r span{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);font-weight:600}
+.turn>.r em{margin-left:auto;font-style:normal;font-size:10.5px;color:var(--faint);
+  font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+.turn pre{margin:0;padding:14px 18px;font-size:12.5px;line-height:1.6;color:var(--ink);
+  overflow:auto;max-height:26rem;white-space:pre;tab-size:2}
+.noturn{padding:11px 18px;font-size:12.5px;color:var(--faint);border-top:1px solid var(--rule)}
+
+.close{border-top:1px solid var(--rule);background:var(--card)}
+.close .wrap{padding:44px 24px 60px;display:flex;flex-direction:column;gap:40px}
+.close h2{font-size:21px;margin-bottom:6px}
+.close h2+p{margin:0 0 16px;max-width:72ch;color:var(--muted)}
+.close code{font-size:12.5px;color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+.tscroll{overflow-x:auto;border:1px solid var(--rule);border-radius:4px}
+th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--faint);font-weight:600;background:var(--sunk);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.m{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--ink);white-space:nowrap}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.yes{color:var(--accent);font-weight:600}
+.no{color:var(--faint)}
+.knobs{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.knob{background:var(--card);padding:16px 18px}
+.knob b{display:block;font-family:"Bricolage Grotesque",sans-serif;color:var(--ink);font-size:14.5px;margin-bottom:5px}
+.knob p{margin:0;font-size:13px;color:var(--muted)}
+.ask{border-left:2px solid var(--accent);padding:2px 0 2px 16px;display:flex;flex-direction:column;gap:12px}
+.ask p{margin:0;max-width:72ch}
+.ask p b{color:var(--ink)}
+footer{padding:22px 0 40px;font-size:12px;color:var(--faint);text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+
+<header class="mast"><div class="wrap">
+  <div class="eyebrow">Step 2 addendum &middot; dataset/prompt_formats.py</div>
+  <h1>Druid Prompt Formats</h1>
+  <p class="lede">Batch 01 rendered all 64 examples through one template, so <strong>the prompt was a constant</strong> &mdash; and a constant is exactly the sort of thing LoRA will happily bake in. These twelve renderers make the input a variable instead: the schema&rsquo;s serialization, the preamble, the turn structure and the amount of prose all move independently of the SQL being taught. <strong>The assistant turn never changes.</strong> Bare SQL, no fence, no prose, in all twelve.</p>
+  <div class="statline">
+    <div class="stat"><b>12</b><span>formats</span></div>
+    <div class="stat"><b>3</b><span>turn shapes</span></div>
+    <div class="stat"><b>4</b><span>capability flags</span></div>
+    <div class="stat"><b>1</b><span>output format</span></div>
+  </div>
+</div></header>
+
+<nav class="casebar"><div class="wrap" id="tabs" role="tablist"></div></nav>
+<main class="wrap" id="main"></main>
+
+<section class="close"><div class="wrap">
+
+  <div>
+    <h2>Not every format can carry every example</h2>
+    <p>A terse format that drops column descriptions cannot tell the model which keys live inside a JSON string, and a format that never mentions lookups cannot support a <code>LOOKUP()</code> call. So each renderer declares what it is able to express, each example declares what it needs, and the sampler only draws from formats that cover it. Fifty-four of the sixty-four examples in batch 01 need nothing special and can be rendered by all twelve.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>Format</th><th>Turns</th><th>Descriptions</th><th>Lookups</th><th>JSON keys</th><th>Marks MVD</th><th>Weight</th></tr></thead>
+      <tbody id="matrix"></tbody>
+    </table></div>
+  </div>
+
+  <div>
+    <h2>Knobs that turn inside each format</h2>
+    <p>Format choice is the coarse axis. These four vary independently underneath it, so two examples rendered through the same format still do not look alike. None of them are in the code yet &mdash; they go in when I generate the full set, assuming you want them.</p>
+    <div class="knobs">
+      <div class="knob"><b>Distractor tables</b><p>Roughly a quarter of prompts carry one or two extra tables the query never touches. Real schema blocks get dumped wholesale, not curated down to the answer.</p></div>
+      <div class="knob"><b>Column order</b><p>The time column is not always listed first, and columns are not always in ingest order, so position never becomes a cue for which column is the timestamp.</p></div>
+      <div class="knob"><b>Description density</b><p>Within the formats that carry prose, some columns get a full description, some a fragment, some nothing at all. Real catalogs are patchy.</p></div>
+      <div class="knob"><b>Table naming</b><p>The <code>ds_</code> prefix drops off a share of the schemas, and some use camelCase columns, so no single naming convention gets welded to the dialect.</p></div>
+    </div>
+  </div>
+
+  <div>
+    <h2>Two things I need you to settle</h2>
+    <div class="ask">
+      <p><b>Which format does inference use?</b> Whatever ends up in <code>inference.py</code> should be the heaviest one in the mix, and right now that is <code>md_sections</code> at 22 percent. Training across twelve formats buys robustness to a prompt you have not written yet; it does not buy you the right to serve a thirteenth. If you plan to ship a different one, tell me which and I will re-weight before generating.</p>
+      <p><b>Format diversity is only half of the fix you asked for.</b> These twelve vary the shape of the prompt, but all four cases above still describe the same nine datasources. A model that has seen <code>ds_sec_alerts</code> two hundred times can memorize its columns no matter how they were serialized. For the 1000-example set I plan to generate around sixty schemas from domain templates, hold a disjoint set of them back for validation, and cap any single schema at about three percent of the data. Raising it because it is the same failure you spotted, one level down.</p>
+    </div>
+  </div>
+
+</div></section>
+<footer>Rendered from the live schema index &middot; Apache Druid 35.0.0</footer>
+
+<script id="data" type="application/json">{
+ "formats": [
+  {
+   "id": "md_sections",
+   "weight": 22,
+   "caps": [
+    "desc",
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F01 - the original. Markdown headings, backticked names, full descriptions."
+  },
+  {
+   "id": "ddl",
+   "weight": 12,
+   "caps": [
+    "desc",
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F02 - CREATE TABLE DDL with trailing line comments."
+  },
+  {
+   "id": "compact",
+   "weight": 7,
+   "caps": [
+    "lookup"
+   ],
+   "doc": "F03 - one line per table, types only, no descriptions."
+  },
+  {
+   "id": "yaml",
+   "weight": 8,
+   "caps": [
+    "desc",
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F04 - YAML."
+  },
+  {
+   "id": "json",
+   "weight": 7,
+   "caps": [
+    "desc",
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F05 - JSON blob, the shape a programmatic caller would inject."
+  },
+  {
+   "id": "pipe_table",
+   "weight": 9,
+   "caps": [
+    "desc",
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F06 - markdown pipe table, the shape a wiki page or dbt doc gets pasted in as."
+  },
+  {
+   "id": "no_system",
+   "weight": 8,
+   "caps": [
+    "desc",
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F07 - two turns. Everything in the user message, schema before question."
+  },
+  {
+   "id": "question_first",
+   "weight": 6,
+   "caps": [
+    "desc",
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F08 - question ahead of the schema, so position is not a cue."
+  },
+  {
+   "id": "verbose_rules",
+   "weight": 10,
+   "caps": [
+    "desc",
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F09 - the heavily prompt-engineered system message a careful team ships."
+  },
+  {
+   "id": "bare",
+   "weight": 4,
+   "caps": [],
+   "doc": "F10 - names only. No types, no descriptions, no rules."
+  },
+  {
+   "id": "sample_rows",
+   "weight": 7,
+   "caps": [
+    "json_keys",
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F11 - schema plus a couple of real rows, the Spider/BIRD convention."
+  },
+  {
+   "id": "druid_native",
+   "weight": 6,
+   "caps": [
+    "lookup",
+    "mvd"
+   ],
+   "doc": "F12 - Druid's own type vocabulary, the shape the web console shows."
+  }
+ ],
+ "cases": [
+  {
+   "id": "tb_01",
+   "label": "Plain",
+   "why": "One table, no lookups or enrichment columns in play. Every format can carry it.",
+   "question": "Show hourly average latency for checkout events over the last 7 days",
+   "sql": "SELECT TIME_FLOOR(__time, 'PT1H') AS \"hour\",\n       AVG(latency_ms) AS \"avg_latency_ms\"\nFROM ds_web_events\nWHERE event_type = 'checkout'\n  AND __time >= CURRENT_TIMESTAMP - INTERVAL '7' DAY\nGROUP BY 1\nORDER BY 1",
+   "schemas": [
+    "web_events"
+   ],
+   "need": [],
+   "renders": {
+    "md_sections": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You write Apache Druid SQL.\nReturn only the query.\n\n# Database Schema\n\n## Table: `ds_web_events`\n### Columns:\n`__time` (TIMESTAMP): Ingested event time. Becomes `__time`, the only TIMESTAMP column.\n`session_id` (VARCHAR): Opaque session identifier.\n`user_id` (VARCHAR): Hashed user identifier. High cardinality.\n`event_type` (VARCHAR): One of: page_view, add_to_cart, checkout, purchase, search.\n`page_path` (VARCHAR): URL path of the page the event fired on.\n`country_code` (VARCHAR): ISO-3166 alpha-2 country code.\n`device_type` (VARCHAR): One of: desktop, mobile, tablet.\n`browser` (VARCHAR): Browser family.\n`os_name` (VARCHAR): Operating system family.\n`referrer_host` (VARCHAR): Hostname of the HTTP referrer.\n`ab_bucket` (VARCHAR): A/B assignment bucket: control, variant_a, variant_b.\n`latency_ms` (BIGINT): Server-side request latency in milliseconds.\n`status_code` (BIGINT): HTTP status code.\n`bytes_sent` (BIGINT): Response size in bytes.\n`cart_items` (BIGINT): Number of items in the cart at event time.\n`revenue_usd` (DOUBLE): Revenue attributed to the event, in USD. Zero for non-purchase events.\n`experiment_tags` (VARCHAR): Multi-value dimension. Active experiment flags on this request.\n`attrs_json` (VARCHAR): JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: campaign, tier, is_bot.\n`request_started_at_ms` (BIGINT): Client-side request start time as epoch MILLISECONDS. Not a TIMESTAMP -- convert with MILLIS_TO_TIMESTAMP."
+      },
+      {
+       "role": "user",
+       "text": "Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "ddl": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You are a text-to-SQL engine for Apache Druid 35.0.0.\nSchema:\n\nCREATE TABLE ds_web_events (\n  __time                 TIMESTAMP,  -- Ingested event time. Becomes `__time`, the only TIMESTAMP column.\n  session_id             VARCHAR,    -- Opaque session identifier.\n  user_id                VARCHAR,    -- Hashed user identifier. High cardinality.\n  event_type             VARCHAR,    -- One of: page_view, add_to_cart, checkout, purchase, search.\n  page_path              VARCHAR,    -- URL path of the page the event fired on.\n  country_code           VARCHAR,    -- ISO-3166 alpha-2 country code.\n  device_type            VARCHAR,    -- One of: desktop, mobile, tablet.\n  browser                VARCHAR,    -- Browser family.\n  os_name                VARCHAR,    -- Operating system family.\n  referrer_host          VARCHAR,    -- Hostname of the HTTP referrer.\n  ab_bucket              VARCHAR,    -- A/B assignment bucket: control, variant_a, variant_b.\n  latency_ms             BIGINT,     -- Server-side request latency in milliseconds.\n  status_code            BIGINT,     -- HTTP status code.\n  bytes_sent             BIGINT,     -- Response size in bytes.\n  cart_items             BIGINT,     -- Number of items in the cart at event time.\n  revenue_usd            DOUBLE,     -- Revenue attributed to the event, in USD. Zero for non-purchase events.\n  experiment_tags        VARCHAR,    -- Multi-value dimension. Active experiment flags on this request.\n  attrs_json             VARCHAR,    -- JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: campaign, tier, is_bot.\n  request_started_at_ms  BIGINT      -- Client-side request start time as epoch MILLISECONDS. Not a TIMESTAMP -- convert with MILLIS_TO_TIMESTAMP.\n);\n\nRespond with one Druid SQL query and nothing else."
+      },
+      {
+       "role": "user",
+       "text": "Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "compact": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid SQL. Output the query only.\n\nds_web_events(__time:TIMESTAMP, session_id:VARCHAR, user_id:VARCHAR, event_type:VARCHAR, page_path:VARCHAR, country_code:VARCHAR, device_type:VARCHAR, browser:VARCHAR, os_name:VARCHAR, referrer_host:VARCHAR, ab_bucket:VARCHAR, latency_ms:BIGINT, status_code:BIGINT, bytes_sent:BIGINT, cart_items:BIGINT, revenue_usd:DOUBLE, experiment_tags:VARCHAR, attrs_json:VARCHAR, request_started_at_ms:BIGINT)"
+      },
+      {
+       "role": "user",
+       "text": "Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "yaml": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Write Apache Druid SQL for the user's question using this schema.\n\ndialect: apache-druid\ntables:\n  - name: ds_web_events\n    domain: Web / product analytics\n    columns:\n      - name: __time\n        type: TIMESTAMP\n        description: \"Ingested event time. Becomes `__time`, the only TIMESTAMP column.\"\n      - name: session_id\n        type: VARCHAR\n        description: \"Opaque session identifier.\"\n      - name: user_id\n        type: VARCHAR\n        description: \"Hashed user identifier. High cardinality.\"\n      - name: event_type\n        type: VARCHAR\n        description: \"One of: page_view, add_to_cart, checkout, purchase, search.\"\n      - name: page_path\n        type: VARCHAR\n        description: \"URL path of the page the event fired on.\"\n      - name: country_code\n        type: VARCHAR\n        description: \"ISO-3166 alpha-2 country code.\"\n      - name: device_type\n        type: VARCHAR\n        description: \"One of: desktop, mobile, tablet.\"\n      - name: browser\n        type: VARCHAR\n        description: \"Browser family.\"\n      - name: os_name\n        type: VARCHAR\n        description: \"Operating system family.\"\n      - name: referrer_host\n        type: VARCHAR\n        description: \"Hostname of the HTTP referrer.\"\n      - name: ab_bucket\n        type: VARCHAR\n        description: \"A/B assignment bucket: control, variant_a, variant_b.\"\n      - name: latency_ms\n        type: BIGINT\n        description: \"Server-side request latency in milliseconds.\"\n      - name: status_code\n        type: BIGINT\n        description: \"HTTP status code.\"\n      - name: bytes_sent\n        type: BIGINT\n        description: \"Response size in bytes.\"\n      - name: cart_items\n        type: BIGINT\n        description: \"Number of items in the cart at event time.\"\n      - name: revenue_usd\n        type: DOUBLE\n        description: \"Revenue attributed to the event, in USD. Zero for non-purchase events.\"\n      - name: experiment_tags\n        type: VARCHAR\n        description: \"Multi-value dimension. Active experiment flags on this request.\"\n      - name: attrs_json\n        type: VARCHAR\n        description: \"JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: campaign, tier, is_bot.\"\n      - name: request_started_at_ms\n        type: BIGINT\n        description: \"Client-side request start time as epoch MILLISECONDS. Not a TIMESTAMP -- convert with MILLIS_TO_TIMESTAMP.\""
+      },
+      {
+       "role": "user",
+       "text": "Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "json": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Given a schema, emit a single Apache Druid SQL query. No explanation."
+      },
+      {
+       "role": "user",
+       "text": "{\n  \"dialect\": \"druid\",\n  \"tables\": [\n    {\n      \"table\": \"ds_web_events\",\n      \"columns\": [\n        {\n          \"name\": \"__time\",\n          \"type\": \"TIMESTAMP\",\n          \"description\": \"Ingested event time. Becomes `__time`, the only TIMESTAMP column.\"\n        },\n        {\n          \"name\": \"session_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Opaque session identifier.\"\n        },\n        {\n          \"name\": \"user_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Hashed user identifier. High cardinality.\"\n        },\n        {\n          \"name\": \"event_type\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"One of: page_view, add_to_cart, checkout, purchase, search.\"\n        },\n        {\n          \"name\": \"page_path\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"URL path of the page the event fired on.\"\n        },\n        {\n          \"name\": \"country_code\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"ISO-3166 alpha-2 country code.\"\n        },\n        {\n          \"name\": \"device_type\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"One of: desktop, mobile, tablet.\"\n        },\n        {\n          \"name\": \"browser\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Browser family.\"\n        },\n        {\n          \"name\": \"os_name\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Operating system family.\"\n        },\n        {\n          \"name\": \"referrer_host\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Hostname of the HTTP referrer.\"\n        },\n        {\n          \"name\": \"ab_bucket\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"A/B assignment bucket: control, variant_a, variant_b.\"\n        },\n        {\n          \"name\": \"latency_ms\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Server-side request latency in milliseconds.\"\n        },\n        {\n          \"name\": \"status_code\",\n          \"type\": \"BIGINT\",\n          \"description\": \"HTTP status code.\"\n        },\n        {\n          \"name\": \"bytes_sent\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Response size in bytes.\"\n        },\n        {\n          \"name\": \"cart_items\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Number of items in the cart at event time.\"\n        },\n        {\n          \"name\": \"revenue_usd\",\n          \"type\": \"DOUBLE\",\n          \"description\": \"Revenue attributed to the event, in USD. Zero for non-purchase events.\"\n        },\n        {\n          \"name\": \"experiment_tags\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Multi-value dimension. Active experiment flags on this request.\"\n        },\n        {\n          \"name\": \"attrs_json\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: campaign, tier, is_bot.\"\n        },\n        {\n          \"name\": \"request_started_at_ms\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Client-side request start time as epoch MILLISECONDS. Not a TIMESTAMP -- convert with MILLIS_TO_TIMESTAMP.\"\n        }\n      ]\n    }\n  ]\n}\n\nShow hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "pipe_table": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You answer questions with Apache Druid SQL. Return the bare query."
+      },
+      {
+       "role": "user",
+       "text": "**ds_web_events** (Web / product analytics, 600 rows)\n\n| Column | Type | Notes |\n| --- | --- | --- |\n| __time | TIMESTAMP | Ingested event time. Becomes `__time`, the only TIMESTAMP column. |\n| session_id | VARCHAR | Opaque session identifier. |\n| user_id | VARCHAR | Hashed user identifier. High cardinality. |\n| event_type | VARCHAR | One of: page_view, add_to_cart, checkout, purchase, search. |\n| page_path | VARCHAR | URL path of the page the event fired on. |\n| country_code | VARCHAR | ISO-3166 alpha-2 country code. |\n| device_type | VARCHAR | One of: desktop, mobile, tablet. |\n| browser | VARCHAR | Browser family. |\n| os_name | VARCHAR | Operating system family. |\n| referrer_host | VARCHAR | Hostname of the HTTP referrer. |\n| ab_bucket | VARCHAR | A/B assignment bucket: control, variant_a, variant_b. |\n| latency_ms | BIGINT | Server-side request latency in milliseconds. |\n| status_code | BIGINT | HTTP status code. |\n| bytes_sent | BIGINT | Response size in bytes. |\n| cart_items | BIGINT | Number of items in the cart at event time. |\n| revenue_usd | DOUBLE | Revenue attributed to the event, in USD. Zero for non-purchase events. |\n| experiment_tags | VARCHAR | Multi-value dimension. Active experiment flags on this request. |\n| attrs_json | VARCHAR | JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: campaign, tier, is_bot. |\n| request_started_at_ms | BIGINT | Client-side request start time as epoch MILLISECONDS. Not a TIMESTAMP -- convert with MILLIS_TO_TIMESTAMP. |\n\nShow hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "no_system": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "user",
+       "text": "Table ds_web_events:\n  - __time (TIMESTAMP) - Ingested event time\n  - session_id (VARCHAR) - Opaque session identifier\n  - user_id (VARCHAR) - Hashed user identifier\n  - event_type (VARCHAR) - One of: page_view, add_to_cart, checkout, purchase, search\n  - page_path (VARCHAR) - URL path of the page the event fired on\n  - country_code (VARCHAR) - ISO-3166 alpha-2 country code\n  - device_type (VARCHAR) - One of: desktop, mobile, tablet\n  - browser (VARCHAR) - Browser family\n  - os_name (VARCHAR) - Operating system family\n  - referrer_host (VARCHAR) - Hostname of the HTTP referrer\n  - ab_bucket (VARCHAR) - A/B assignment bucket: control, variant_a, variant_b\n  - latency_ms (BIGINT) - Server-side request latency in milliseconds\n  - status_code (BIGINT) - HTTP status code\n  - bytes_sent (BIGINT) - Response size in bytes\n  - cart_items (BIGINT) - Number of items in the cart at event time\n  - revenue_usd (DOUBLE) - Revenue attributed to the event, in USD\n  - experiment_tags (VARCHAR) - Multi-value dimension. Active experiment flags on this request\n  - attrs_json (VARCHAR) - JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: campaign, tier, is_bot\n  - request_started_at_ms (BIGINT) - Client-side request start time as epoch MILLISECONDS\n\nWrite a Druid SQL query: Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "question_first": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid SQL assistant. Reply with SQL only."
+      },
+      {
+       "role": "user",
+       "text": "Show hourly average latency for checkout events over the last 7 days\n\nSchema:\nds_web_events\n  __time TIMESTAMP   Ingested event time\n  session_id VARCHAR   Opaque session identifier\n  user_id VARCHAR   Hashed user identifier\n  event_type VARCHAR   One of: page_view, add_to_cart, checkout, purchase, search\n  page_path VARCHAR   URL path of the page the event fired on\n  country_code VARCHAR   ISO-3166 alpha-2 country code\n  device_type VARCHAR   One of: desktop, mobile, tablet\n  browser VARCHAR   Browser family\n  os_name VARCHAR   Operating system family\n  referrer_host VARCHAR   Hostname of the HTTP referrer\n  ab_bucket VARCHAR   A/B assignment bucket: control, variant_a, variant_b\n  latency_ms BIGINT   Server-side request latency in milliseconds\n  status_code BIGINT   HTTP status code\n  bytes_sent BIGINT   Response size in bytes\n  cart_items BIGINT   Number of items in the cart at event time\n  revenue_usd DOUBLE   Revenue attributed to the event, in USD\n  experiment_tags VARCHAR   Multi-value dimension. Active experiment flags on this request\n  attrs_json VARCHAR   JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: campaign, tier, is_bot\n  request_started_at_ms BIGINT   Client-side request start time as epoch MILLISECONDS"
+      }
+     ]
+    },
+    "verbose_rules": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You are a senior analytics engineer who writes Apache Druid SQL.\n\nRules:\n1. Return exactly one SQL query. No prose, no markdown fences, no trailing semicolon.\n2. `__time` is the only TIMESTAMP column. All time filtering goes through it.\n3. Double-quote every output alias.\n4. GROUP BY and ORDER BY refer to output positions by ordinal.\n5. Relative dates resolve against CURRENT_TIMESTAMP.\n6. Prefer Druid's approximate aggregators over exact ones.\n\n## Available tables\n\n### ds_web_events - Web / product analytics\n- __time :: TIMESTAMP - Ingested event time. Becomes `__time`, the only TIMESTAMP column.\n- session_id :: VARCHAR - Opaque session identifier.\n- user_id :: VARCHAR - Hashed user identifier. High cardinality.\n- event_type :: VARCHAR - One of: page_view, add_to_cart, checkout, purchase, search.\n- page_path :: VARCHAR - URL path of the page the event fired on.\n- country_code :: VARCHAR - ISO-3166 alpha-2 country code.\n- device_type :: VARCHAR - One of: desktop, mobile, tablet.\n- browser :: VARCHAR - Browser family.\n- os_name :: VARCHAR - Operating system family.\n- referrer_host :: VARCHAR - Hostname of the HTTP referrer.\n- ab_bucket :: VARCHAR - A/B assignment bucket: control, variant_a, variant_b.\n- latency_ms :: BIGINT - Server-side request latency in milliseconds.\n- status_code :: BIGINT - HTTP status code.\n- bytes_sent :: BIGINT - Response size in bytes.\n- cart_items :: BIGINT - Number of items in the cart at event time.\n- revenue_usd :: DOUBLE - Revenue attributed to the event, in USD. Zero for non-purchase events.\n- experiment_tags :: VARCHAR [multi-value dimension] - Multi-value dimension. Active experiment flags on this request.\n- attrs_json :: VARCHAR [JSON held as a string] - JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: campaign, tier, is_bot.\n- request_started_at_ms :: BIGINT - Client-side request start time as epoch MILLISECONDS. Not a TIMESTAMP -- convert with MILLIS_TO_TIMESTAMP."
+      },
+      {
+       "role": "user",
+       "text": "Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "bare": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Druid SQL.\nds_web_events: __time, session_id, user_id, event_type, page_path, country_code, device_type, browser, os_name, referrer_host, ab_bucket, latency_ms, status_code, bytes_sent, cart_items, revenue_usd, experiment_tags, attrs_json, request_started_at_ms"
+      },
+      {
+       "role": "user",
+       "text": "Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "sample_rows": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Translate the question into one Apache Druid SQL query. Output SQL only."
+      },
+      {
+       "role": "user",
+       "text": "Table: ds_web_events\nColumns: __time TIMESTAMP, session_id VARCHAR, user_id VARCHAR, event_type VARCHAR, page_path VARCHAR, country_code VARCHAR, device_type VARCHAR, browser VARCHAR, os_name VARCHAR, referrer_host VARCHAR, ab_bucket VARCHAR, latency_ms BIGINT, status_code BIGINT, bytes_sent BIGINT, cart_items BIGINT, revenue_usd DOUBLE, experiment_tags VARCHAR, attrs_json VARCHAR, request_started_at_ms BIGINT\nSample rows:\n  2026-08-19 18:30:23 | sess-0147 | u00163 | search | /account | BR | desktop | firefox | windows | direct | variant_a | 366 | 201 | 412980 | 3 | 0.0 | new_checkout | {\"campaign\": \"spring\", \"t... | 1787164218159\n  2026-08-04 08:26:00 | sess-0026 | u00286 | search | /search | GB | mobile | safari | android | google.com | variant_b | 362 | 200 | 606880 | 2 | 0.0 | banner_v2,new_checkout | {\"campaign\": \"none\", \"tie... | 1785831958886\n\nQuestion: Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    },
+    "druid_native": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid 35.0.0. Column types below are Druid native types (LONG/STRING/DOUBLE map to BIGINT/VARCHAR/DOUBLE in SQL).\nAnswer with a single query.\n\ndatasource: ds_web_events\n  __time                   TIMESTAMP\n  session_id               STRING\n  user_id                  STRING\n  event_type               STRING\n  page_path                STRING\n  country_code             STRING\n  device_type              STRING\n  browser                  STRING\n  os_name                  STRING\n  referrer_host            STRING\n  ab_bucket                STRING\n  latency_ms               LONG\n  status_code              LONG\n  bytes_sent               LONG\n  cart_items               LONG\n  revenue_usd              DOUBLE\n  experiment_tags          STRING (multi-value)\n  attrs_json               STRING\n  request_started_at_ms    LONG"
+      },
+      {
+       "role": "user",
+       "text": "Show hourly average latency for checkout events over the last 7 days"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "lk_01",
+   "label": "Lookup",
+   "why": "The SQL calls LOOKUP(), so the prompt has to name the lookup and its key column.",
+   "question": "Alert counts by host criticality tier",
+   "sql": "SELECT LOOKUP(host_id, 'host_tier') AS \"tier\",\n       COUNT(*) AS \"alert_count\"\nFROM ds_sec_alerts\nGROUP BY 1\nORDER BY 2 DESC",
+   "schemas": [
+    "sec_alerts"
+   ],
+   "need": [
+    "lookup"
+   ],
+   "renders": {
+    "md_sections": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You write Apache Druid SQL.\nReturn only the query.\n\n# Database Schema\n\n## Table: `ds_sec_alerts`\n### Columns:\n`__time` (TIMESTAMP): Detection time. Becomes `__time`.\n`alert_id` (VARCHAR): Alert identifier.\n`host_id` (VARCHAR): Host identifier. Resolvable through the `host_tier` lookup.\n`rule_name` (VARCHAR): Detection rule that fired.\n`severity` (VARCHAR): Severity: low, medium, high, critical.\n`src_ip` (VARCHAR): Source IP address.\n`dest_port` (BIGINT): Destination port.\n`bytes_transferred` (BIGINT): Bytes moved during the flagged activity.\n`alert_tags` (VARCHAR): Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\n`analyst_verdict` (VARCHAR): Triage outcome: true_positive, false_positive, pending.\n`enrichment_json` (VARCHAR): JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\n\n### Lookups:\n`host_tier`: keyed by `host_id`. Maps host_id to its criticality tier: gold, silver, bronze. Use LOOKUP(host_id, 'host_tier')."
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by host criticality tier"
+      }
+     ]
+    },
+    "ddl": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You are a text-to-SQL engine for Apache Druid 35.0.0.\nSchema:\n\nCREATE TABLE ds_sec_alerts (\n  __time             TIMESTAMP,  -- Detection time. Becomes `__time`.\n  alert_id           VARCHAR,    -- Alert identifier.\n  host_id            VARCHAR,    -- Host identifier. Resolvable through the `host_tier` lookup.\n  rule_name          VARCHAR,    -- Detection rule that fired.\n  severity           VARCHAR,    -- Severity: low, medium, high, critical.\n  src_ip             VARCHAR,    -- Source IP address.\n  dest_port          BIGINT,     -- Destination port.\n  bytes_transferred  BIGINT,     -- Bytes moved during the flagged activity.\n  alert_tags         VARCHAR,    -- Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\n  analyst_verdict    VARCHAR,    -- Triage outcome: true_positive, false_positive, pending.\n  enrichment_json    VARCHAR     -- JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\n);\n-- lookup host_tier: LOOKUP(host_id, 'host_tier') -> Maps host_id to its criticality tier: gold, silver, bronze.\n\nRespond with one Druid SQL query and nothing else."
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by host criticality tier"
+      }
+     ]
+    },
+    "compact": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid SQL. Output the query only.\n\nds_sec_alerts(__time:TIMESTAMP, alert_id:VARCHAR, host_id:VARCHAR, rule_name:VARCHAR, severity:VARCHAR, src_ip:VARCHAR, dest_port:BIGINT, bytes_transferred:BIGINT, alert_tags:VARCHAR, analyst_verdict:VARCHAR, enrichment_json:VARCHAR)\nlookup host_tier on host_id"
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by host criticality tier"
+      }
+     ]
+    },
+    "yaml": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Write Apache Druid SQL for the user's question using this schema.\n\ndialect: apache-druid\ntables:\n  - name: ds_sec_alerts\n    domain: Security operations\n    columns:\n      - name: __time\n        type: TIMESTAMP\n        description: \"Detection time. Becomes `__time`.\"\n      - name: alert_id\n        type: VARCHAR\n        description: \"Alert identifier.\"\n      - name: host_id\n        type: VARCHAR\n        description: \"Host identifier. Resolvable through the `host_tier` lookup.\"\n      - name: rule_name\n        type: VARCHAR\n        description: \"Detection rule that fired.\"\n      - name: severity\n        type: VARCHAR\n        description: \"Severity: low, medium, high, critical.\"\n      - name: src_ip\n        type: VARCHAR\n        description: \"Source IP address.\"\n      - name: dest_port\n        type: BIGINT\n        description: \"Destination port.\"\n      - name: bytes_transferred\n        type: BIGINT\n        description: \"Bytes moved during the flagged activity.\"\n      - name: alert_tags\n        type: VARCHAR\n        description: \"Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\"\n      - name: analyst_verdict\n        type: VARCHAR\n        description: \"Triage outcome: true_positive, false_positive, pending.\"\n      - name: enrichment_json\n        type: VARCHAR\n        description: \"JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\"\n    lookups:\n      - name: host_tier\n        key: host_id\n        description: \"Maps host_id to its criticality tier: gold, silver, bronze.\""
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by host criticality tier"
+      }
+     ]
+    },
+    "json": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Given a schema, emit a single Apache Druid SQL query. No explanation."
+      },
+      {
+       "role": "user",
+       "text": "{\n  \"dialect\": \"druid\",\n  \"tables\": [\n    {\n      \"table\": \"ds_sec_alerts\",\n      \"columns\": [\n        {\n          \"name\": \"__time\",\n          \"type\": \"TIMESTAMP\",\n          \"description\": \"Detection time. Becomes `__time`.\"\n        },\n        {\n          \"name\": \"alert_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Alert identifier.\"\n        },\n        {\n          \"name\": \"host_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Host identifier. Resolvable through the `host_tier` lookup.\"\n        },\n        {\n          \"name\": \"rule_name\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Detection rule that fired.\"\n        },\n        {\n          \"name\": \"severity\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Severity: low, medium, high, critical.\"\n        },\n        {\n          \"name\": \"src_ip\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Source IP address.\"\n        },\n        {\n          \"name\": \"dest_port\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Destination port.\"\n        },\n        {\n          \"name\": \"bytes_transferred\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Bytes moved during the flagged activity.\"\n        },\n        {\n          \"name\": \"alert_tags\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\"\n        },\n        {\n          \"name\": \"analyst_verdict\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Triage outcome: true_positive, false_positive, pending.\"\n        },\n        {\n          \"name\": \"enrichment_json\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\"\n        }\n      ],\n      \"lookups\": [\n        {\n          \"name\": \"host_tier\",\n          \"key\": \"host_id\",\n          \"description\": \"Maps host_id to its criticality tier: gold, silver, bronze.\"\n        }\n      ]\n    }\n  ]\n}\n\nAlert counts by host criticality tier"
+      }
+     ]
+    },
+    "pipe_table": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You answer questions with Apache Druid SQL. Return the bare query."
+      },
+      {
+       "role": "user",
+       "text": "**ds_sec_alerts** (Security operations, 500 rows)\n\n| Column | Type | Notes |\n| --- | --- | --- |\n| __time | TIMESTAMP | Detection time. Becomes `__time`. |\n| alert_id | VARCHAR | Alert identifier. |\n| host_id | VARCHAR | Host identifier. Resolvable through the `host_tier` lookup. |\n| rule_name | VARCHAR | Detection rule that fired. |\n| severity | VARCHAR | Severity: low, medium, high, critical. |\n| src_ip | VARCHAR | Source IP address. |\n| dest_port | BIGINT | Destination port. |\n| bytes_transferred | BIGINT | Bytes moved during the flagged activity. |\n| alert_tags | VARCHAR | Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement. |\n| analyst_verdict | VARCHAR | Triage outcome: true_positive, false_positive, pending. |\n| enrichment_json | VARCHAR | JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level. |\n| LOOKUP(host_id, 'host_tier') | VARCHAR | Maps host_id to its criticality tier: gold, silver, bronze. |\n\nAlert counts by host criticality tier"
+      }
+     ]
+    },
+    "no_system": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "user",
+       "text": "Table ds_sec_alerts:\n  - __time (TIMESTAMP) - Detection time\n  - alert_id (VARCHAR) - Alert identifier\n  - host_id (VARCHAR) - Host identifier\n  - rule_name (VARCHAR) - Detection rule that fired\n  - severity (VARCHAR) - Severity: low, medium, high, critical\n  - src_ip (VARCHAR) - Source IP address\n  - dest_port (BIGINT) - Destination port\n  - bytes_transferred (BIGINT) - Bytes moved during the flagged activity\n  - alert_tags (VARCHAR) - Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement\n  - analyst_verdict (VARCHAR) - Triage outcome: true_positive, false_positive, pending\n  - enrichment_json (VARCHAR) - JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level\n  - lookup host_tier keyed by host_id\n\nWrite a Druid SQL query: Alert counts by host criticality tier"
+      }
+     ]
+    },
+    "question_first": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid SQL assistant. Reply with SQL only."
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by host criticality tier\n\nSchema:\nds_sec_alerts\n  __time TIMESTAMP   Detection time\n  alert_id VARCHAR   Alert identifier\n  host_id VARCHAR   Host identifier\n  rule_name VARCHAR   Detection rule that fired\n  severity VARCHAR   Severity: low, medium, high, critical\n  src_ip VARCHAR   Source IP address\n  dest_port BIGINT   Destination port\n  bytes_transferred BIGINT   Bytes moved during the flagged activity\n  alert_tags VARCHAR   Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement\n  analyst_verdict VARCHAR   Triage outcome: true_positive, false_positive, pending\n  enrichment_json VARCHAR   JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level\n  LOOKUP(host_id, 'host_tier')"
+      }
+     ]
+    },
+    "verbose_rules": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You are a senior analytics engineer who writes Apache Druid SQL.\n\nRules:\n1. Return exactly one SQL query. No prose, no markdown fences, no trailing semicolon.\n2. `__time` is the only TIMESTAMP column. All time filtering goes through it.\n3. Double-quote every output alias.\n4. GROUP BY and ORDER BY refer to output positions by ordinal.\n5. Relative dates resolve against CURRENT_TIMESTAMP.\n6. Prefer Druid's approximate aggregators over exact ones.\n\n## Available tables\n\n### ds_sec_alerts - Security operations\n- __time :: TIMESTAMP - Detection time. Becomes `__time`.\n- alert_id :: VARCHAR - Alert identifier.\n- host_id :: VARCHAR - Host identifier. Resolvable through the `host_tier` lookup.\n- rule_name :: VARCHAR - Detection rule that fired.\n- severity :: VARCHAR - Severity: low, medium, high, critical.\n- src_ip :: VARCHAR - Source IP address.\n- dest_port :: BIGINT - Destination port.\n- bytes_transferred :: BIGINT - Bytes moved during the flagged activity.\n- alert_tags :: VARCHAR [multi-value dimension] - Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\n- analyst_verdict :: VARCHAR - Triage outcome: true_positive, false_positive, pending.\n- enrichment_json :: VARCHAR [JSON held as a string] - JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\nLookups: host_tier keyed by host_id - Maps host_id to its criticality tier: gold, silver, bronze."
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by host criticality tier"
+      }
+     ]
+    },
+    "bare": {
+     "eligible": false,
+     "missing": [
+      "lookup"
+     ],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Druid SQL.\nds_sec_alerts: __time, alert_id, host_id, rule_name, severity, src_ip, dest_port, bytes_transferred, alert_tags, analyst_verdict, enrichment_json"
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by host criticality tier"
+      }
+     ]
+    },
+    "sample_rows": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Translate the question into one Apache Druid SQL query. Output SQL only."
+      },
+      {
+       "role": "user",
+       "text": "Table: ds_sec_alerts\nColumns: __time TIMESTAMP, alert_id VARCHAR, host_id VARCHAR, rule_name VARCHAR, severity VARCHAR, src_ip VARCHAR, dest_port BIGINT, bytes_transferred BIGINT, alert_tags VARCHAR, analyst_verdict VARCHAR, enrichment_json VARCHAR\nSample rows:\n  2026-08-03 12:46:01 | alr-00042 | host-056 | priv_esc_attempt | high | 10.48.202.215 | 9200 | 19114337 | exfiltration,credential_a... | false_positive | {\"asset_owner\": \"data\", \"...\n  2026-07-31 06:57:54 | alr-00312 | host-026 | beaconing_dns | high | 10.180.16.145 | 9200 | 37602999 | exfiltration,lateral_move... | pending | {\"asset_owner\": \"data\", \"...\nLookup: host_tier keyed by host_id - Maps host_id to its criticality tier: gold, silver, bronze.\n\nQuestion: Alert counts by host criticality tier"
+      }
+     ]
+    },
+    "druid_native": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid 35.0.0. Column types below are Druid native types (LONG/STRING/DOUBLE map to BIGINT/VARCHAR/DOUBLE in SQL).\nAnswer with a single query.\n\ndatasource: ds_sec_alerts\n  __time                   TIMESTAMP\n  alert_id                 STRING\n  host_id                  STRING\n  rule_name                STRING\n  severity                 STRING\n  src_ip                   STRING\n  dest_port                LONG\n  bytes_transferred        LONG\n  alert_tags               STRING (multi-value)\n  analyst_verdict          STRING\n  enrichment_json          STRING\n  LOOKUP host_tier         keyed by host_id"
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by host criticality tier"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "js_02",
+   "label": "JSON payload",
+   "why": "Reads a key out of a JSON-as-string column. The prompt must supply the key names.",
+   "question": "Alert counts by environment from the enrichment payload, critical only",
+   "sql": "SELECT JSON_VALUE(PARSE_JSON(enrichment_json), '$.env') AS \"env\",\n       COUNT(*) AS \"alert_count\"\nFROM ds_sec_alerts\nWHERE severity = 'critical'\nGROUP BY 1\nORDER BY 2 DESC",
+   "schemas": [
+    "sec_alerts"
+   ],
+   "need": [
+    "desc",
+    "json_keys"
+   ],
+   "renders": {
+    "md_sections": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You write Apache Druid SQL.\nReturn only the query.\n\n# Database Schema\n\n## Table: `ds_sec_alerts`\n### Columns:\n`__time` (TIMESTAMP): Detection time. Becomes `__time`.\n`alert_id` (VARCHAR): Alert identifier.\n`host_id` (VARCHAR): Host identifier. Resolvable through the `host_tier` lookup.\n`rule_name` (VARCHAR): Detection rule that fired.\n`severity` (VARCHAR): Severity: low, medium, high, critical.\n`src_ip` (VARCHAR): Source IP address.\n`dest_port` (BIGINT): Destination port.\n`bytes_transferred` (BIGINT): Bytes moved during the flagged activity.\n`alert_tags` (VARCHAR): Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\n`analyst_verdict` (VARCHAR): Triage outcome: true_positive, false_positive, pending.\n`enrichment_json` (VARCHAR): JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\n\n### Lookups:\n`host_tier`: keyed by `host_id`. Maps host_id to its criticality tier: gold, silver, bronze. Use LOOKUP(host_id, 'host_tier')."
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "ddl": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You are a text-to-SQL engine for Apache Druid 35.0.0.\nSchema:\n\nCREATE TABLE ds_sec_alerts (\n  __time             TIMESTAMP,  -- Detection time. Becomes `__time`.\n  alert_id           VARCHAR,    -- Alert identifier.\n  host_id            VARCHAR,    -- Host identifier. Resolvable through the `host_tier` lookup.\n  rule_name          VARCHAR,    -- Detection rule that fired.\n  severity           VARCHAR,    -- Severity: low, medium, high, critical.\n  src_ip             VARCHAR,    -- Source IP address.\n  dest_port          BIGINT,     -- Destination port.\n  bytes_transferred  BIGINT,     -- Bytes moved during the flagged activity.\n  alert_tags         VARCHAR,    -- Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\n  analyst_verdict    VARCHAR,    -- Triage outcome: true_positive, false_positive, pending.\n  enrichment_json    VARCHAR     -- JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\n);\n-- lookup host_tier: LOOKUP(host_id, 'host_tier') -> Maps host_id to its criticality tier: gold, silver, bronze.\n\nRespond with one Druid SQL query and nothing else."
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "compact": {
+     "eligible": false,
+     "missing": [
+      "desc",
+      "json_keys"
+     ],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid SQL. Output the query only.\n\nds_sec_alerts(__time:TIMESTAMP, alert_id:VARCHAR, host_id:VARCHAR, rule_name:VARCHAR, severity:VARCHAR, src_ip:VARCHAR, dest_port:BIGINT, bytes_transferred:BIGINT, alert_tags:VARCHAR, analyst_verdict:VARCHAR, enrichment_json:VARCHAR)\nlookup host_tier on host_id"
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "yaml": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Write Apache Druid SQL for the user's question using this schema.\n\ndialect: apache-druid\ntables:\n  - name: ds_sec_alerts\n    domain: Security operations\n    columns:\n      - name: __time\n        type: TIMESTAMP\n        description: \"Detection time. Becomes `__time`.\"\n      - name: alert_id\n        type: VARCHAR\n        description: \"Alert identifier.\"\n      - name: host_id\n        type: VARCHAR\n        description: \"Host identifier. Resolvable through the `host_tier` lookup.\"\n      - name: rule_name\n        type: VARCHAR\n        description: \"Detection rule that fired.\"\n      - name: severity\n        type: VARCHAR\n        description: \"Severity: low, medium, high, critical.\"\n      - name: src_ip\n        type: VARCHAR\n        description: \"Source IP address.\"\n      - name: dest_port\n        type: BIGINT\n        description: \"Destination port.\"\n      - name: bytes_transferred\n        type: BIGINT\n        description: \"Bytes moved during the flagged activity.\"\n      - name: alert_tags\n        type: VARCHAR\n        description: \"Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\"\n      - name: analyst_verdict\n        type: VARCHAR\n        description: \"Triage outcome: true_positive, false_positive, pending.\"\n      - name: enrichment_json\n        type: VARCHAR\n        description: \"JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\"\n    lookups:\n      - name: host_tier\n        key: host_id\n        description: \"Maps host_id to its criticality tier: gold, silver, bronze.\""
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "json": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Given a schema, emit a single Apache Druid SQL query. No explanation."
+      },
+      {
+       "role": "user",
+       "text": "{\n  \"dialect\": \"druid\",\n  \"tables\": [\n    {\n      \"table\": \"ds_sec_alerts\",\n      \"columns\": [\n        {\n          \"name\": \"__time\",\n          \"type\": \"TIMESTAMP\",\n          \"description\": \"Detection time. Becomes `__time`.\"\n        },\n        {\n          \"name\": \"alert_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Alert identifier.\"\n        },\n        {\n          \"name\": \"host_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Host identifier. Resolvable through the `host_tier` lookup.\"\n        },\n        {\n          \"name\": \"rule_name\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Detection rule that fired.\"\n        },\n        {\n          \"name\": \"severity\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Severity: low, medium, high, critical.\"\n        },\n        {\n          \"name\": \"src_ip\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Source IP address.\"\n        },\n        {\n          \"name\": \"dest_port\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Destination port.\"\n        },\n        {\n          \"name\": \"bytes_transferred\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Bytes moved during the flagged activity.\"\n        },\n        {\n          \"name\": \"alert_tags\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\"\n        },\n        {\n          \"name\": \"analyst_verdict\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Triage outcome: true_positive, false_positive, pending.\"\n        },\n        {\n          \"name\": \"enrichment_json\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\"\n        }\n      ],\n      \"lookups\": [\n        {\n          \"name\": \"host_tier\",\n          \"key\": \"host_id\",\n          \"description\": \"Maps host_id to its criticality tier: gold, silver, bronze.\"\n        }\n      ]\n    }\n  ]\n}\n\nAlert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "pipe_table": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You answer questions with Apache Druid SQL. Return the bare query."
+      },
+      {
+       "role": "user",
+       "text": "**ds_sec_alerts** (Security operations, 500 rows)\n\n| Column | Type | Notes |\n| --- | --- | --- |\n| __time | TIMESTAMP | Detection time. Becomes `__time`. |\n| alert_id | VARCHAR | Alert identifier. |\n| host_id | VARCHAR | Host identifier. Resolvable through the `host_tier` lookup. |\n| rule_name | VARCHAR | Detection rule that fired. |\n| severity | VARCHAR | Severity: low, medium, high, critical. |\n| src_ip | VARCHAR | Source IP address. |\n| dest_port | BIGINT | Destination port. |\n| bytes_transferred | BIGINT | Bytes moved during the flagged activity. |\n| alert_tags | VARCHAR | Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement. |\n| analyst_verdict | VARCHAR | Triage outcome: true_positive, false_positive, pending. |\n| enrichment_json | VARCHAR | JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level. |\n| LOOKUP(host_id, 'host_tier') | VARCHAR | Maps host_id to its criticality tier: gold, silver, bronze. |\n\nAlert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "no_system": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "user",
+       "text": "Table ds_sec_alerts:\n  - __time (TIMESTAMP) - Detection time\n  - alert_id (VARCHAR) - Alert identifier\n  - host_id (VARCHAR) - Host identifier\n  - rule_name (VARCHAR) - Detection rule that fired\n  - severity (VARCHAR) - Severity: low, medium, high, critical\n  - src_ip (VARCHAR) - Source IP address\n  - dest_port (BIGINT) - Destination port\n  - bytes_transferred (BIGINT) - Bytes moved during the flagged activity\n  - alert_tags (VARCHAR) - Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement\n  - analyst_verdict (VARCHAR) - Triage outcome: true_positive, false_positive, pending\n  - enrichment_json (VARCHAR) - JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level\n  - lookup host_tier keyed by host_id\n\nWrite a Druid SQL query: Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "question_first": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid SQL assistant. Reply with SQL only."
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by environment from the enrichment payload, critical only\n\nSchema:\nds_sec_alerts\n  __time TIMESTAMP   Detection time\n  alert_id VARCHAR   Alert identifier\n  host_id VARCHAR   Host identifier\n  rule_name VARCHAR   Detection rule that fired\n  severity VARCHAR   Severity: low, medium, high, critical\n  src_ip VARCHAR   Source IP address\n  dest_port BIGINT   Destination port\n  bytes_transferred BIGINT   Bytes moved during the flagged activity\n  alert_tags VARCHAR   Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement\n  analyst_verdict VARCHAR   Triage outcome: true_positive, false_positive, pending\n  enrichment_json VARCHAR   JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level\n  LOOKUP(host_id, 'host_tier')"
+      }
+     ]
+    },
+    "verbose_rules": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You are a senior analytics engineer who writes Apache Druid SQL.\n\nRules:\n1. Return exactly one SQL query. No prose, no markdown fences, no trailing semicolon.\n2. `__time` is the only TIMESTAMP column. All time filtering goes through it.\n3. Double-quote every output alias.\n4. GROUP BY and ORDER BY refer to output positions by ordinal.\n5. Relative dates resolve against CURRENT_TIMESTAMP.\n6. Prefer Druid's approximate aggregators over exact ones.\n\n## Available tables\n\n### ds_sec_alerts - Security operations\n- __time :: TIMESTAMP - Detection time. Becomes `__time`.\n- alert_id :: VARCHAR - Alert identifier.\n- host_id :: VARCHAR - Host identifier. Resolvable through the `host_tier` lookup.\n- rule_name :: VARCHAR - Detection rule that fired.\n- severity :: VARCHAR - Severity: low, medium, high, critical.\n- src_ip :: VARCHAR - Source IP address.\n- dest_port :: BIGINT - Destination port.\n- bytes_transferred :: BIGINT - Bytes moved during the flagged activity.\n- alert_tags :: VARCHAR [multi-value dimension] - Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.\n- analyst_verdict :: VARCHAR - Triage outcome: true_positive, false_positive, pending.\n- enrichment_json :: VARCHAR [JSON held as a string] - JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.\nLookups: host_tier keyed by host_id - Maps host_id to its criticality tier: gold, silver, bronze."
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "bare": {
+     "eligible": false,
+     "missing": [
+      "desc",
+      "json_keys"
+     ],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Druid SQL.\nds_sec_alerts: __time, alert_id, host_id, rule_name, severity, src_ip, dest_port, bytes_transferred, alert_tags, analyst_verdict, enrichment_json"
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "sample_rows": {
+     "eligible": false,
+     "missing": [
+      "desc"
+     ],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Translate the question into one Apache Druid SQL query. Output SQL only."
+      },
+      {
+       "role": "user",
+       "text": "Table: ds_sec_alerts\nColumns: __time TIMESTAMP, alert_id VARCHAR, host_id VARCHAR, rule_name VARCHAR, severity VARCHAR, src_ip VARCHAR, dest_port BIGINT, bytes_transferred BIGINT, alert_tags VARCHAR, analyst_verdict VARCHAR, enrichment_json VARCHAR\nSample rows:\n  2026-08-03 12:46:01 | alr-00042 | host-056 | priv_esc_attempt | high | 10.48.202.215 | 9200 | 19114337 | exfiltration,credential_a... | false_positive | {\"asset_owner\": \"data\", \"...\n  2026-07-31 06:57:54 | alr-00312 | host-026 | beaconing_dns | high | 10.180.16.145 | 9200 | 37602999 | exfiltration,lateral_move... | pending | {\"asset_owner\": \"data\", \"...\nLookup: host_tier keyed by host_id - Maps host_id to its criticality tier: gold, silver, bronze.\n\nQuestion: Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    },
+    "druid_native": {
+     "eligible": false,
+     "missing": [
+      "desc",
+      "json_keys"
+     ],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid 35.0.0. Column types below are Druid native types (LONG/STRING/DOUBLE map to BIGINT/VARCHAR/DOUBLE in SQL).\nAnswer with a single query.\n\ndatasource: ds_sec_alerts\n  __time                   TIMESTAMP\n  alert_id                 STRING\n  host_id                  STRING\n  rule_name                STRING\n  severity                 STRING\n  src_ip                   STRING\n  dest_port                LONG\n  bytes_transferred        LONG\n  alert_tags               STRING (multi-value)\n  analyst_verdict          STRING\n  enrichment_json          STRING\n  LOOKUP host_tier         keyed by host_id"
+      },
+      {
+       "role": "user",
+       "text": "Alert counts by environment from the enrichment payload, critical only"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "jn_02",
+   "label": "Two tables",
+   "why": "A join. Shows how each format handles more than one table.",
+   "question": "Top 10 brands by units sold in the last 30 days",
+   "sql": "SELECT p.brand AS \"brand\",\n       SUM(o.quantity) AS \"units_sold\"\nFROM ds_orders o\nJOIN ds_products p ON o.product_sku = p.sku\nWHERE o.__time >= CURRENT_TIMESTAMP - INTERVAL '30' DAY\nGROUP BY 1\nORDER BY 2 DESC\nLIMIT 10",
+   "schemas": [
+    "orders",
+    "products"
+   ],
+   "need": [],
+   "renders": {
+    "md_sections": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You write Apache Druid SQL.\nReturn only the query.\n\n# Database Schema\n\n## Table: `ds_orders`\n### Columns:\n`__time` (TIMESTAMP): Order placement time. Becomes `__time`.\n`order_id` (VARCHAR): Order identifier.\n`customer_id` (VARCHAR): Customer identifier.\n`product_sku` (VARCHAR): Stock keeping unit. Joins to ds_products.sku.\n`channel` (VARCHAR): Sales channel: web, ios, android, partner.\n`ship_country` (VARCHAR): Destination country code.\n`quantity` (BIGINT): Units ordered.\n`unit_price_usd` (DOUBLE): Price per unit in USD.\n`discount_usd` (DOUBLE): Discount applied to the line in USD.\n`payment_method` (VARCHAR): Payment instrument: card, paypal, giftcard, invoice.\n\n## Table: `ds_products`\n### Columns:\n`__time` (TIMESTAMP): Catalogue snapshot time. Becomes `__time`.\n`sku` (VARCHAR): Stock keeping unit. Join key from ds_orders.product_sku.\n`product_name` (VARCHAR): Display name.\n`category` (VARCHAR): Top-level category: apparel, electronics, home, grocery, toys.\n`brand` (VARCHAR): Brand name.\n`supplier_country` (VARCHAR): Country the supplier ships from.\n`list_price_usd` (DOUBLE): Current list price in USD.\n`weight_grams` (BIGINT): Shipping weight in grams."
+      },
+      {
+       "role": "user",
+       "text": "Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "ddl": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You are a text-to-SQL engine for Apache Druid 35.0.0.\nSchema:\n\nCREATE TABLE ds_orders (\n  __time          TIMESTAMP,  -- Order placement time. Becomes `__time`.\n  order_id        VARCHAR,    -- Order identifier.\n  customer_id     VARCHAR,    -- Customer identifier.\n  product_sku     VARCHAR,    -- Stock keeping unit. Joins to ds_products.sku.\n  channel         VARCHAR,    -- Sales channel: web, ios, android, partner.\n  ship_country    VARCHAR,    -- Destination country code.\n  quantity        BIGINT,     -- Units ordered.\n  unit_price_usd  DOUBLE,     -- Price per unit in USD.\n  discount_usd    DOUBLE,     -- Discount applied to the line in USD.\n  payment_method  VARCHAR     -- Payment instrument: card, paypal, giftcard, invoice.\n);\n\nCREATE TABLE ds_products (\n  __time            TIMESTAMP,  -- Catalogue snapshot time. Becomes `__time`.\n  sku               VARCHAR,    -- Stock keeping unit. Join key from ds_orders.product_sku.\n  product_name      VARCHAR,    -- Display name.\n  category          VARCHAR,    -- Top-level category: apparel, electronics, home, grocery, toys.\n  brand             VARCHAR,    -- Brand name.\n  supplier_country  VARCHAR,    -- Country the supplier ships from.\n  list_price_usd    DOUBLE,     -- Current list price in USD.\n  weight_grams      BIGINT      -- Shipping weight in grams.\n);\n\nRespond with one Druid SQL query and nothing else."
+      },
+      {
+       "role": "user",
+       "text": "Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "compact": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid SQL. Output the query only.\n\nds_orders(__time:TIMESTAMP, order_id:VARCHAR, customer_id:VARCHAR, product_sku:VARCHAR, channel:VARCHAR, ship_country:VARCHAR, quantity:BIGINT, unit_price_usd:DOUBLE, discount_usd:DOUBLE, payment_method:VARCHAR)\nds_products(__time:TIMESTAMP, sku:VARCHAR, product_name:VARCHAR, category:VARCHAR, brand:VARCHAR, supplier_country:VARCHAR, list_price_usd:DOUBLE, weight_grams:BIGINT)"
+      },
+      {
+       "role": "user",
+       "text": "Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "yaml": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Write Apache Druid SQL for the user's question using this schema.\n\ndialect: apache-druid\ntables:\n  - name: ds_orders\n    domain: E-commerce\n    columns:\n      - name: __time\n        type: TIMESTAMP\n        description: \"Order placement time. Becomes `__time`.\"\n      - name: order_id\n        type: VARCHAR\n        description: \"Order identifier.\"\n      - name: customer_id\n        type: VARCHAR\n        description: \"Customer identifier.\"\n      - name: product_sku\n        type: VARCHAR\n        description: \"Stock keeping unit. Joins to ds_products.sku.\"\n      - name: channel\n        type: VARCHAR\n        description: \"Sales channel: web, ios, android, partner.\"\n      - name: ship_country\n        type: VARCHAR\n        description: \"Destination country code.\"\n      - name: quantity\n        type: BIGINT\n        description: \"Units ordered.\"\n      - name: unit_price_usd\n        type: DOUBLE\n        description: \"Price per unit in USD.\"\n      - name: discount_usd\n        type: DOUBLE\n        description: \"Discount applied to the line in USD.\"\n      - name: payment_method\n        type: VARCHAR\n        description: \"Payment instrument: card, paypal, giftcard, invoice.\"\n  - name: ds_products\n    domain: E-commerce\n    columns:\n      - name: __time\n        type: TIMESTAMP\n        description: \"Catalogue snapshot time. Becomes `__time`.\"\n      - name: sku\n        type: VARCHAR\n        description: \"Stock keeping unit. Join key from ds_orders.product_sku.\"\n      - name: product_name\n        type: VARCHAR\n        description: \"Display name.\"\n      - name: category\n        type: VARCHAR\n        description: \"Top-level category: apparel, electronics, home, grocery, toys.\"\n      - name: brand\n        type: VARCHAR\n        description: \"Brand name.\"\n      - name: supplier_country\n        type: VARCHAR\n        description: \"Country the supplier ships from.\"\n      - name: list_price_usd\n        type: DOUBLE\n        description: \"Current list price in USD.\"\n      - name: weight_grams\n        type: BIGINT\n        description: \"Shipping weight in grams.\""
+      },
+      {
+       "role": "user",
+       "text": "Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "json": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Given a schema, emit a single Apache Druid SQL query. No explanation."
+      },
+      {
+       "role": "user",
+       "text": "{\n  \"dialect\": \"druid\",\n  \"tables\": [\n    {\n      \"table\": \"ds_orders\",\n      \"columns\": [\n        {\n          \"name\": \"__time\",\n          \"type\": \"TIMESTAMP\",\n          \"description\": \"Order placement time. Becomes `__time`.\"\n        },\n        {\n          \"name\": \"order_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Order identifier.\"\n        },\n        {\n          \"name\": \"customer_id\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Customer identifier.\"\n        },\n        {\n          \"name\": \"product_sku\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Stock keeping unit. Joins to ds_products.sku.\"\n        },\n        {\n          \"name\": \"channel\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Sales channel: web, ios, android, partner.\"\n        },\n        {\n          \"name\": \"ship_country\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Destination country code.\"\n        },\n        {\n          \"name\": \"quantity\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Units ordered.\"\n        },\n        {\n          \"name\": \"unit_price_usd\",\n          \"type\": \"DOUBLE\",\n          \"description\": \"Price per unit in USD.\"\n        },\n        {\n          \"name\": \"discount_usd\",\n          \"type\": \"DOUBLE\",\n          \"description\": \"Discount applied to the line in USD.\"\n        },\n        {\n          \"name\": \"payment_method\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Payment instrument: card, paypal, giftcard, invoice.\"\n        }\n      ]\n    },\n    {\n      \"table\": \"ds_products\",\n      \"columns\": [\n        {\n          \"name\": \"__time\",\n          \"type\": \"TIMESTAMP\",\n          \"description\": \"Catalogue snapshot time. Becomes `__time`.\"\n        },\n        {\n          \"name\": \"sku\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Stock keeping unit. Join key from ds_orders.product_sku.\"\n        },\n        {\n          \"name\": \"product_name\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Display name.\"\n        },\n        {\n          \"name\": \"category\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Top-level category: apparel, electronics, home, grocery, toys.\"\n        },\n        {\n          \"name\": \"brand\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Brand name.\"\n        },\n        {\n          \"name\": \"supplier_country\",\n          \"type\": \"VARCHAR\",\n          \"description\": \"Country the supplier ships from.\"\n        },\n        {\n          \"name\": \"list_price_usd\",\n          \"type\": \"DOUBLE\",\n          \"description\": \"Current list price in USD.\"\n        },\n        {\n          \"name\": \"weight_grams\",\n          \"type\": \"BIGINT\",\n          \"description\": \"Shipping weight in grams.\"\n        }\n      ]\n    }\n  ]\n}\n\nTop 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "pipe_table": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You answer questions with Apache Druid SQL. Return the bare query."
+      },
+      {
+       "role": "user",
+       "text": "**ds_orders** (E-commerce, 500 rows)\n\n| Column | Type | Notes |\n| --- | --- | --- |\n| __time | TIMESTAMP | Order placement time. Becomes `__time`. |\n| order_id | VARCHAR | Order identifier. |\n| customer_id | VARCHAR | Customer identifier. |\n| product_sku | VARCHAR | Stock keeping unit. Joins to ds_products.sku. |\n| channel | VARCHAR | Sales channel: web, ios, android, partner. |\n| ship_country | VARCHAR | Destination country code. |\n| quantity | BIGINT | Units ordered. |\n| unit_price_usd | DOUBLE | Price per unit in USD. |\n| discount_usd | DOUBLE | Discount applied to the line in USD. |\n| payment_method | VARCHAR | Payment instrument: card, paypal, giftcard, invoice. |\n\n**ds_products** (E-commerce, 120 rows)\n\n| Column | Type | Notes |\n| --- | --- | --- |\n| __time | TIMESTAMP | Catalogue snapshot time. Becomes `__time`. |\n| sku | VARCHAR | Stock keeping unit. Join key from ds_orders.product_sku. |\n| product_name | VARCHAR | Display name. |\n| category | VARCHAR | Top-level category: apparel, electronics, home, grocery, toys. |\n| brand | VARCHAR | Brand name. |\n| supplier_country | VARCHAR | Country the supplier ships from. |\n| list_price_usd | DOUBLE | Current list price in USD. |\n| weight_grams | BIGINT | Shipping weight in grams. |\n\nTop 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "no_system": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "user",
+       "text": "Table ds_orders:\n  - __time (TIMESTAMP) - Order placement time\n  - order_id (VARCHAR) - Order identifier\n  - customer_id (VARCHAR) - Customer identifier\n  - product_sku (VARCHAR) - Stock keeping unit\n  - channel (VARCHAR) - Sales channel: web, ios, android, partner\n  - ship_country (VARCHAR) - Destination country code\n  - quantity (BIGINT) - Units ordered\n  - unit_price_usd (DOUBLE) - Price per unit in USD\n  - discount_usd (DOUBLE) - Discount applied to the line in USD\n  - payment_method (VARCHAR) - Payment instrument: card, paypal, giftcard, invoice\n\nTable ds_products:\n  - __time (TIMESTAMP) - Catalogue snapshot time\n  - sku (VARCHAR) - Stock keeping unit\n  - product_name (VARCHAR) - Display name\n  - category (VARCHAR) - Top-level category: apparel, electronics, home, grocery, toys\n  - brand (VARCHAR) - Brand name\n  - supplier_country (VARCHAR) - Country the supplier ships from\n  - list_price_usd (DOUBLE) - Current list price in USD\n  - weight_grams (BIGINT) - Shipping weight in grams\n\nWrite a Druid SQL query: Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "question_first": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid SQL assistant. Reply with SQL only."
+      },
+      {
+       "role": "user",
+       "text": "Top 10 brands by units sold in the last 30 days\n\nSchema:\nds_orders\n  __time TIMESTAMP   Order placement time\n  order_id VARCHAR   Order identifier\n  customer_id VARCHAR   Customer identifier\n  product_sku VARCHAR   Stock keeping unit\n  channel VARCHAR   Sales channel: web, ios, android, partner\n  ship_country VARCHAR   Destination country code\n  quantity BIGINT   Units ordered\n  unit_price_usd DOUBLE   Price per unit in USD\n  discount_usd DOUBLE   Discount applied to the line in USD\n  payment_method VARCHAR   Payment instrument: card, paypal, giftcard, invoice\n\nds_products\n  __time TIMESTAMP   Catalogue snapshot time\n  sku VARCHAR   Stock keeping unit\n  product_name VARCHAR   Display name\n  category VARCHAR   Top-level category: apparel, electronics, home, grocery, toys\n  brand VARCHAR   Brand name\n  supplier_country VARCHAR   Country the supplier ships from\n  list_price_usd DOUBLE   Current list price in USD\n  weight_grams BIGINT   Shipping weight in grams"
+      }
+     ]
+    },
+    "verbose_rules": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "You are a senior analytics engineer who writes Apache Druid SQL.\n\nRules:\n1. Return exactly one SQL query. No prose, no markdown fences, no trailing semicolon.\n2. `__time` is the only TIMESTAMP column. All time filtering goes through it.\n3. Double-quote every output alias.\n4. GROUP BY and ORDER BY refer to output positions by ordinal.\n5. Relative dates resolve against CURRENT_TIMESTAMP.\n6. Prefer Druid's approximate aggregators over exact ones.\n\n## Available tables\n\n### ds_orders - E-commerce\n- __time :: TIMESTAMP - Order placement time. Becomes `__time`.\n- order_id :: VARCHAR - Order identifier.\n- customer_id :: VARCHAR - Customer identifier.\n- product_sku :: VARCHAR - Stock keeping unit. Joins to ds_products.sku.\n- channel :: VARCHAR - Sales channel: web, ios, android, partner.\n- ship_country :: VARCHAR - Destination country code.\n- quantity :: BIGINT - Units ordered.\n- unit_price_usd :: DOUBLE - Price per unit in USD.\n- discount_usd :: DOUBLE - Discount applied to the line in USD.\n- payment_method :: VARCHAR - Payment instrument: card, paypal, giftcard, invoice.\n\n### ds_products - E-commerce\n- __time :: TIMESTAMP - Catalogue snapshot time. Becomes `__time`.\n- sku :: VARCHAR - Stock keeping unit. Join key from ds_orders.product_sku.\n- product_name :: VARCHAR - Display name.\n- category :: VARCHAR - Top-level category: apparel, electronics, home, grocery, toys.\n- brand :: VARCHAR - Brand name.\n- supplier_country :: VARCHAR - Country the supplier ships from.\n- list_price_usd :: DOUBLE - Current list price in USD.\n- weight_grams :: BIGINT - Shipping weight in grams."
+      },
+      {
+       "role": "user",
+       "text": "Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "bare": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Druid SQL.\nds_orders: __time, order_id, customer_id, product_sku, channel, ship_country, quantity, unit_price_usd, discount_usd, payment_method\nds_products: __time, sku, product_name, category, brand, supplier_country, list_price_usd, weight_grams"
+      },
+      {
+       "role": "user",
+       "text": "Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "sample_rows": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Translate the question into one Apache Druid SQL query. Output SQL only."
+      },
+      {
+       "role": "user",
+       "text": "Table: ds_orders\nColumns: __time TIMESTAMP, order_id VARCHAR, customer_id VARCHAR, product_sku VARCHAR, channel VARCHAR, ship_country VARCHAR, quantity BIGINT, unit_price_usd DOUBLE, discount_usd DOUBLE, payment_method VARCHAR\nSample rows:\n  2026-08-05 06:30:59 | ord-00165 | cust-0190 | SKU-0065 | partner | DE | 2 | 553.67 | 0.0 | card\n  2026-07-24 13:29:02 | ord-00292 | cust-0126 | SKU-0031 | partner | US | 2 | 570.79 | 41.94 | invoice\n\nTable: ds_products\nColumns: __time TIMESTAMP, sku VARCHAR, product_name VARCHAR, category VARCHAR, brand VARCHAR, supplier_country VARCHAR, list_price_usd DOUBLE, weight_grams BIGINT\nSample rows:\n  2026-08-01 01:41:38 | SKU-0010 | acme item 809 | apparel | umbrella | MX | 266.04 | 531\n  2026-07-28 10:38:10 | SKU-0029 | globex item 711 | apparel | initech | TR | 696.02 | 6506\n\nQuestion: Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    },
+    "druid_native": {
+     "eligible": true,
+     "missing": [],
+     "turns": [
+      {
+       "role": "system",
+       "text": "Apache Druid 35.0.0. Column types below are Druid native types (LONG/STRING/DOUBLE map to BIGINT/VARCHAR/DOUBLE in SQL).\nAnswer with a single query.\n\ndatasource: ds_orders\n  __time                   TIMESTAMP\n  order_id                 STRING\n  customer_id              STRING\n  product_sku              STRING\n  channel                  STRING\n  ship_country             STRING\n  quantity                 LONG\n  unit_price_usd           DOUBLE\n  discount_usd             DOUBLE\n  payment_method           STRING\n\ndatasource: ds_products\n  __time                   TIMESTAMP\n  sku                      STRING\n  product_name             STRING\n  category                 STRING\n  brand                    STRING\n  supplier_country         STRING\n  list_price_usd           DOUBLE\n  weight_grams             LONG"
+      },
+      {
+       "role": "user",
+       "text": "Top 10 brands by units sold in the last 30 days"
+      }
+     ]
+    }
+   }
+  }
+ ]
+}</script>
+<script>
+const D = JSON.parse(document.getElementById("data").textContent);
+const CAPS = ["desc", "lookup", "json_keys", "mvd"];
+const esc = s => s.replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
+const totalW = D.formats.reduce((a, f) => a + f.weight, 0);
+const pct = w => Math.round(100 * w / totalW);
+const byId = Object.fromEntries(D.formats.map(f => [f.id, f]));
+
+const KW = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|LIMIT|AND|OR|NOT|AS|ON|JOIN|LEFT|INNER|IN|IS|NULL|DESC|ASC|CASE|WHEN|THEN|ELSE|END|INTERVAL|TIMESTAMP|WITH|FILTER)\b/g;
+function sqlHi(t) {
+  return esc(t)
+    .replace(/'[^']*'/g, m => '<span class="str">' + m + '</span>')
+    .replace(/\b([A-Z_][A-Z0-9_]{2,})\(/g, '<span class="fn">$1</span>(')
+    .replace(KW, m => '<span class="kw">' + m + '</span>');
+}
+
+function specimen(fid, r) {
+  const f = byId[fid];
+  const caps = CAPS.map(c =>
+    '<span class="cap' + (f.caps.includes(c) ? ' on' : '') + '">' + c + '</span>').join("");
+  const blocked = r.eligible ? "" :
+    '<div class="blocked"><span>&#9888;</span><div>Not drawn for this example &mdash; it cannot express <b>' +
+    r.missing.join(", ") + '</b>. The sampler picks a different format here.</div></div>';
+  const solo = r.turns.length === 1 ?
+    '<div class="noturn">No system turn &mdash; this format puts everything in the user message.</div>' : "";
+  const turns = r.turns.map(t =>
+    '<div class="turn ' + t.role + '"><div class="r"><i></i><span>' + t.role + '</span><em>' +
+    t.text.length + ' chars</em></div><pre>' + esc(t.text) + '</pre></div>').join("");
+  return '<article class="spec' + (r.eligible ? "" : " off") + '" id="f-' + fid + '">' +
+    '<header><h3><span class="id">' + fid + '</span><span class="doc">' + esc(f.doc) + '</span></h3>' +
+    '<div class="pct"><b>' + pct(f.weight) + '%</b> of the mix</div></header>' +
+    '<div class="caps">' + caps + '</div>' + blocked + solo + turns + '</article>';
+}
+
+function renderCase(i) {
+  const c = D.cases[i];
+  document.querySelectorAll(".tab").forEach((t, j) => t.setAttribute("aria-selected", j === i));
+  const rail = D.formats.map(f => {
+    const ok = c.renders[f.id].eligible;
+    return '<li><a href="#f-' + f.id + '" class="' + (ok ? "" : "off") + '">' + f.id +
+      '<span class="wbar"><i style="width:' + Math.round(100 * f.weight / 22) + '%"></i></span></a></li>';
+  }).join("");
+  const need = c.need.length ? c.need.join("</code>, <code>") : "column names and types, nothing more";
+  document.getElementById("main").innerHTML =
+    '<div class="casehead"><h2>' + esc(c.question) + '</h2>' +
+    '<p>' + esc(c.why) + ' Tables: <code>' + c.schemas.join("</code>, <code>") +
+    '</code>. The prompt has to supply: <code>' + need + '</code>.</p>' +
+    '<div class="constant"><div class="ch"><b>Assistant turn</b>' +
+    '<span>byte-identical in all twelve renderings &mdash; only the input moves</span></div>' +
+    '<pre>' + sqlHi(c.sql) + '</pre></div></div>' +
+    '<div class="cols"><aside class="rail"><h3>Formats</h3><ol>' + rail + '</ol>' +
+    '<p class="railnote">Bar length is sampling weight. Dimmed entries cannot express what this example needs.</p>' +
+    '</aside><div class="stack">' +
+    D.formats.map(f => specimen(f.id, c.renders[f.id])).join("") + '</div></div>';
+}
+
+document.getElementById("tabs").innerHTML = D.cases.map((c, i) =>
+  '<button class="tab" role="tab" aria-selected="false" onclick="renderCase(' + i + ')">' +
+  '<span class="t">' + c.label + '</span><span class="s">' + c.id + '</span></button>').join("");
+
+document.getElementById("matrix").innerHTML = D.formats.map(f => {
+  const turns = f.id === "no_system" ? "user only" : "system + user";
+  const cell = c => f.caps.includes(c) ? '<span class="yes">yes</span>' : '<span class="no">&mdash;</span>';
+  return '<tr><td class="m">' + f.id + '</td><td>' + turns + '</td><td>' + cell("desc") +
+    '</td><td>' + cell("lookup") + '</td><td>' + cell("json_keys") + '</td><td>' + cell("mvd") +
+    '</td><td class="n">' + pct(f.weight) + '%</td></tr>';
+}).join("");
+
+renderCase(0);
+</script>

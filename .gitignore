@@ -224,7 +224,8 @@ druid-harness/**/*.csv
 druid-harness/docker/apache-druid-*-bin.tar.gz
 
 # Training files and data
-dataset/
+*.jsonl
+*.json
 
 # Temp files
 test.txt

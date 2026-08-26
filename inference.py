@@ -7,7 +7,7 @@ import torch
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-2B")
-peft_model = PeftModel.from_pretrained(model, "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora")
+peft_model = PeftModel.from_pretrained(model, "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_smoke_test/")
 model = peft_model.merge_and_unload()
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3.5-2B")
 

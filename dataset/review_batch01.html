@@ -1,0 +1,1674 @@
+<title>Druid LoRA Review Batch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --ground:#EBEEF4; --surface:#FFFFFF; --sunken:#F4F6FA;
+  --ink:#131722; --muted:#5C6479; --faint:#828BA1; --rule:#D3D9E6;
+  --accent:#2B44B8; --accent-soft:#E3E8FB;
+  --ok:#1B6B45; --ok-soft:#E1F0E8;
+  --warn:#8A5A12; --warn-soft:#FAF0DC;
+  --bad:#A63A18; --bad-soft:#FAE7E0;
+  --code:#F4F6FA; --code-ink:#1B2130;
+  --k:#2B44B8; --f:#7A2E8F; --s:#1B6B45; --q:#A63A18;
+  --shadow:0 1px 2px rgba(19,23,34,.06), 0 8px 24px -12px rgba(19,23,34,.18);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:#0D1017; --surface:#151A24; --sunken:#10141C;
+    --ink:#E6E9F0; --muted:#98A1B5; --faint:#6C7589; --rule:#262D3B;
+    --accent:#8FA4FF; --accent-soft:#1C2340;
+    --ok:#6DD09B; --ok-soft:#122720;
+    --warn:#E0B25E; --warn-soft:#2A2214;
+    --bad:#F0876A; --bad-soft:#2C1A15;
+    --code:#0F131B; --code-ink:#D8DDE8;
+    --k:#8FA4FF; --f:#D79BEC; --s:#7FD3A3; --q:#F0A085;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"] {
+  --ground:#0D1017; --surface:#151A24; --sunken:#10141C;
+  --ink:#E6E9F0; --muted:#98A1B5; --faint:#6C7589; --rule:#262D3B;
+  --accent:#8FA4FF; --accent-soft:#1C2340;
+  --ok:#6DD09B; --ok-soft:#122720;
+  --warn:#E0B25E; --warn-soft:#2A2214;
+  --bad:#F0876A; --bad-soft:#2C1A15;
+  --code:#0F131B; --code-ink:#D8DDE8;
+  --k:#8FA4FF; --f:#D79BEC; --s:#7FD3A3; --q:#F0A085;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3 { font-family:Archivo,"IBM Plex Sans",sans-serif; font-weight:700; letter-spacing:-.015em; text-wrap:balance; margin:0; }
+code,pre { font-family:"IBM Plex Mono",ui-monospace,monospace; }
+a { color:var(--accent); }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:3px; }
+
+.shell { display:grid; grid-template-columns:246px minmax(0,1fr); gap:34px; max-width:1320px; margin:0 auto; padding:0 26px; }
+@media (max-width:960px) { .shell { grid-template-columns:minmax(0,1fr); gap:0; } .rail { position:static !important; height:auto !important; } }
+
+/* ---- masthead ---- */
+.mast { border-bottom:1px solid var(--rule); background:var(--surface); }
+.mast-in { max-width:1320px; margin:0 auto; padding:38px 26px 30px; }
+.eyebrow { font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin:0 0 12px; }
+.mast h1 { font-size:clamp(28px,4vw,40px); line-height:1.1; }
+.lede { max-width:64ch; color:var(--muted); margin:14px 0 0; font-size:16px; }
+.stats { display:flex; flex-wrap:wrap; gap:0; margin-top:28px; border:1px solid var(--rule); border-radius:8px; overflow:hidden; }
+.stat { flex:1 1 132px; padding:13px 16px; background:var(--sunken); border-right:1px solid var(--rule); }
+.stat:last-child { border-right:0; }
+.stat b { display:block; font-family:Archivo,sans-serif; font-size:23px; font-variant-numeric:tabular-nums; line-height:1.1; }
+.stat span { font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--faint); }
+
+/* ---- rail ---- */
+.rail { position:sticky; top:0; height:100vh; overflow-y:auto; padding:28px 0 40px; }
+.rail h3 { font-size:11.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--faint); margin:0 0 10px; font-family:"IBM Plex Mono",monospace; font-weight:500; }
+.rail a { display:flex; justify-content:space-between; gap:10px; align-items:baseline; padding:5px 9px; border-radius:5px; text-decoration:none; color:var(--muted); font-size:13.5px; }
+.rail a:hover { background:var(--accent-soft); color:var(--accent); }
+.rail a b { font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); font-weight:500; font-variant-numeric:tabular-nums; }
+
+/* ---- content ---- */
+main { padding:28px 0 90px; min-width:0; }
+.panel { background:var(--surface); border:1px solid var(--rule); border-radius:10px; padding:22px 24px; margin-bottom:26px; box-shadow:var(--shadow); }
+.panel h2 { font-size:19px; margin-bottom:6px; }
+.panel p { color:var(--muted); margin:0 0 14px; max-width:66ch; }
+.panel p:last-child { margin-bottom:0; }
+details.tmpl summary { cursor:pointer; font-weight:600; font-size:14px; padding:7px 0; }
+.tw { overflow-x:auto; margin-top:11px; }
+table { border-collapse:collapse; width:100%; font-size:12.5px; font-family:"IBM Plex Mono",monospace; }
+th { text-align:left; font-weight:500; color:var(--faint); border-bottom:1px solid var(--rule); padding:5px 11px 5px 0; white-space:nowrap; font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+td { padding:4px 11px 4px 0; border-bottom:1px solid var(--rule); color:var(--muted); white-space:nowrap; }
+td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; padding-right:18px; }
+
+/* ---- clusters ---- */
+.cluster { margin:0 0 40px; scroll-margin-top:16px; }
+.chead { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:0 0 12px; border-bottom:2px solid var(--ink); margin-bottom:18px; }
+.chead h2 { font-size:21px; }
+.chead p { margin:0; color:var(--muted); font-size:13.5px; flex:1 1 240px; }
+.cn { font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); }
+
+.ex { background:var(--surface); border:1px solid var(--rule); border-radius:10px; margin-bottom:14px; overflow:hidden; box-shadow:var(--shadow); scroll-margin-top:16px; }
+.ex > header { display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:9px 18px; background:var(--sunken); border-bottom:1px solid var(--rule); }
+.eid { font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); }
+.ds-list { margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; }
+code.ds { font-size:11px; color:var(--muted); background:var(--ground); border:1px solid var(--rule); border-radius:4px; padding:1px 6px; }
+.tag { font-size:10.5px; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.07em; padding:2px 7px; border-radius:3px; }
+.tag.hard { background:var(--bad-soft); color:var(--bad); }
+.tag.soft { background:var(--warn-soft); color:var(--warn); }
+.q { margin:0; padding:15px 18px 3px; font-size:16px; font-weight:500; max-width:70ch; }
+.panes { display:grid; grid-template-columns:minmax(0,1fr); gap:0; padding:11px 18px 18px; }
+.ex.has-trap .panes { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; }
+@media (max-width:900px) { .ex.has-trap .panes { grid-template-columns:minmax(0,1fr); } }
+.pane h4 { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin:0 0 7px; font-size:11.5px; font-family:"IBM Plex Mono",monospace; font-weight:500; text-transform:uppercase; letter-spacing:.08em; color:var(--faint); }
+.ok { color:var(--ok); text-transform:none; letter-spacing:0; }
+.never { color:var(--faint); text-transform:none; letter-spacing:0; font-style:italic; }
+pre { margin:0; background:var(--code); border:1px solid var(--rule); border-radius:7px; padding:12px 14px; overflow-x:auto; font-size:12.9px; line-height:1.62; color:var(--code-ink); }
+.pane.naive pre { border-color:color-mix(in srgb, var(--bad) 34%, var(--rule)); }
+.pane.naive .q { color:var(--bad); }
+code i { font-style:normal; }
+i.k { color:var(--k); font-weight:500; }
+i.f { color:var(--f); }
+i.s { color:var(--s); }
+i.q { color:var(--q); }
+.verdict { margin:10px 0 0; font-size:12.8px; padding:9px 12px; border-radius:6px; border-left:3px solid; }
+.verdict.bad { background:var(--bad-soft); border-color:var(--bad); color:var(--ink); }
+.verdict.warn { background:var(--warn-soft); border-color:var(--warn); color:var(--ink); }
+.verdict strong { color:var(--bad); }
+.verdict.warn strong { color:var(--warn); }
+.qbox { background:var(--sunken); border:1px solid var(--rule); border-radius:7px; padding:13px 15px; font-size:12.9px; white-space:pre-wrap; overflow-x:auto; line-height:1.6; }
+ul.notes { margin:0; padding-left:19px; color:var(--muted); }
+ul.notes li { margin-bottom:7px; }
+ul.notes strong { color:var(--ink); }
+</style>
+
+<header class="mast"><div class="mast-in">
+  <p class="eyebrow">Step 2 · review batch · Druid 35.0.0</p>
+  <h1>Druid LoRA Review Batch</h1>
+  <p class="lede">64 candidate training examples across 17 quirk clusters and 9 synthetic datasources.
+  Every completion on this page was executed against the live harness cluster; every trap was executed too, to prove it really is a trap.
+  Nothing here is written from memory.</p>
+  <div class="stats">
+    <div class="stat"><b>64</b><span>examples</span></div>
+    <div class="stat"><b>9</b><span>datasources</span></div>
+    <div class="stat"><b>17</b><span>clusters</span></div>
+    <div class="stat"><b>19</b><span>hard traps</span></div>
+    <div class="stat"><b>2</b><span>silent traps</span></div>
+    <div class="stat"><b>64/64</b><span>gates passed</span></div>
+  </div>
+</div></header>
+
+<div class="shell">
+<nav class="rail">
+  <h3>Clusters</h3>
+  <a href="#c-time_bucketing"><span>Time bucketing</span><b>6</b></a><a href="#c-relative_time"><span>Relative time windows</span><b>5</b></a><a href="#c-time_extract_format"><span>Extract and format</span><b>4</b></a><a href="#c-epoch_time_column"><span>Epoch columns</span><b>4</b></a><a href="#c-string_time_column"><span>String time columns</span><b>3</b></a><a href="#c-order_by_restriction"><span>The ORDER BY restriction</span><b>5</b></a><a href="#c-reserved_alias"><span>Reserved-word aliases</span><b>3</b></a><a href="#c-timestamp_literal"><span>TIMESTAMP literals</span><b>2</b></a><a href="#c-approx_agg"><span>Approximate aggregates</span><b>4</b></a><a href="#c-latest_earliest"><span>LATEST and EARLIEST</span><b>3</b></a><a href="#c-mvd"><span>Multi-value dimensions</span><b>4</b></a><a href="#c-json_string"><span>JSON stored as string</span><b>3</b></a><a href="#c-lookup"><span>Lookups</span><b>3</b></a><a href="#c-join"><span>Joins</span><b>3</b></a><a href="#c-missing_function"><span>Functions Druid does not have</span><b>5</b></a><a href="#c-time_shift"><span>Period comparison</span><b>3</b></a><a href="#c-grouping"><span>Grouping idioms</span><b>4</b></a>
+</nav>
+<main>
+
+<div class="panel">
+  <h2>What to check</h2>
+  <ul class="notes">
+    <li><strong>The template.</strong> Preamble + schema in <code>system</code>, bare SQL out. Expand it below and confirm it matches what you will serve.</li>
+    <li><strong>The house style.</strong> Output aliases are <em>always</em> double-quoted, <code>GROUP BY</code>/<code>ORDER BY</code> use ordinals, relative time resolves against <code>CURRENT_TIMESTAMP</code>, and approximate aggregates are the default. If you disagree with any of those, now is the cheap moment to say so.</li>
+    <li><strong>The traps.</strong> Hard traps are rejected by Druid; silent traps run clean and return the wrong answer. Both are shown with the real engine response.</li>
+    <li><strong>Coverage.</strong> Is any quirk you hit in production missing from the cluster list on the left?</li>
+  </ul>
+</div>
+
+<div class="panel">
+  <h2>The exact prompt template</h2>
+  <p>This is verbatim what a training record's <code>system</code> message contains. The schema block is generated from the live cluster, so type names match <code>INFORMATION_SCHEMA</code>.</p>
+  <details class="tmpl"><summary>Single-table example — ds_sec_alerts, with a lookup</summary>
+    <div class="qbox">You write Apache Druid SQL.
+Return only the query.
+
+# Database Schema
+
+## Table: `ds_sec_alerts`
+### Columns:
+`__time` (TIMESTAMP): Detection time. Becomes `__time`.
+`alert_id` (VARCHAR): Alert identifier.
+`host_id` (VARCHAR): Host identifier. Resolvable through the `host_tier` lookup.
+`rule_name` (VARCHAR): Detection rule that fired.
+`severity` (VARCHAR): Severity: low, medium, high, critical.
+`src_ip` (VARCHAR): Source IP address.
+`dest_port` (BIGINT): Destination port.
+`bytes_transferred` (BIGINT): Bytes moved during the flagged activity.
+`alert_tags` (VARCHAR): Multi-value dimension. MITRE-style labels, e.g. persistence, lateral_movement.
+`analyst_verdict` (VARCHAR): Triage outcome: true_positive, false_positive, pending.
+`enrichment_json` (VARCHAR): JSON object stored as a string. Parse with PARSE_JSON before JSON_VALUE. Keys: asset_owner, env, patch_level.
+
+### Lookups:
+`host_tier`: keyed by `host_id`. Maps host_id to its criticality tier: gold, silver, bronze. Use LOOKUP(host_id, 'host_tier').</div></details>
+  <details class="tmpl"><summary>Two-table example — ds_orders + ds_products</summary>
+    <div class="qbox">You write Apache Druid SQL.
+Return only the query.
+
+# Database Schema
+
+## Table: `ds_orders`
+### Columns:
+`__time` (TIMESTAMP): Order placement time. Becomes `__time`.
+`order_id` (VARCHAR): Order identifier.
+`customer_id` (VARCHAR): Customer identifier.
+`product_sku` (VARCHAR): Stock keeping unit. Joins to ds_products.sku.
+`channel` (VARCHAR): Sales channel: web, ios, android, partner.
+`ship_country` (VARCHAR): Destination country code.
+`quantity` (BIGINT): Units ordered.
+`unit_price_usd` (DOUBLE): Price per unit in USD.
+`discount_usd` (DOUBLE): Discount applied to the line in USD.
+`payment_method` (VARCHAR): Payment instrument: card, paypal, giftcard, invoice.
+
+## Table: `ds_products`
+### Columns:
+`__time` (TIMESTAMP): Catalogue snapshot time. Becomes `__time`.
+`sku` (VARCHAR): Stock keeping unit. Join key from ds_orders.product_sku.
+`product_name` (VARCHAR): Display name.
+`category` (VARCHAR): Top-level category: apparel, electronics, home, grocery, toys.
+`brand` (VARCHAR): Brand name.
+`supplier_country` (VARCHAR): Country the supplier ships from.
+`list_price_usd` (DOUBLE): Current list price in USD.
+`weight_grams` (BIGINT): Shipping weight in grams.</div></details>
+</div>
+
+<div class="panel">
+  <h2>Datasources</h2>
+  <p>Nine synthetic schemas spanning narrow to production-wide. Seed rows cover the 30 days ending at build time, so <code>CURRENT_TIMESTAMP</code>-relative queries return real rows.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Datasource</th><th>Domain</th><th class="n">Cols</th><th class="n">Rows</th><th>Enrichment shapes</th></tr></thead>
+    <tbody><tr><td><code>ds_web_events</code></td><td>Web / product analytics</td><td class='n'>19</td><td class='n'>600</td><td>MVD JSON epoch/string time </td></tr><tr><td><code>ds_ad_impressions</code></td><td>Ad tech</td><td class='n'>12</td><td class='n'>500</td><td>MVD epoch/string time </td></tr><tr><td><code>ds_iot_readings</code></td><td>Industrial IoT</td><td class='n'>9</td><td class='n'>500</td><td>epoch/string time </td></tr><tr><td><code>ds_orders</code></td><td>E-commerce</td><td class='n'>10</td><td class='n'>500</td><td></td></tr><tr><td><code>ds_products</code></td><td>E-commerce</td><td class='n'>8</td><td class='n'>120</td><td></td></tr><tr><td><code>ds_fin_txn</code></td><td>Payments / fintech</td><td class='n'>14</td><td class='n'>600</td><td>epoch/string time </td></tr><tr><td><code>ds_sec_alerts</code></td><td>Security operations</td><td class='n'>11</td><td class='n'>500</td><td>MVD JSON lookup </td></tr><tr><td><code>ds_game_sessions</code></td><td>Gaming</td><td class='n'>7</td><td class='n'>400</td><td></td></tr><tr><td><code>ds_telco_cdr</code></td><td>Telecommunications</td><td class='n'>24</td><td class='n'>700</td><td></td></tr></tbody>
+  </table></div>
+</div>
+
+
+<section class="cluster" id="c-time_bucketing">
+  <div class="chead">
+    <h2>Time bucketing</h2>
+    <p>TIME_FLOOR, DATE_TRUNC, FLOOR … TO</p>
+    <span class="cn">6 examples</span>
+  </div>
+  
+  <article class="ex" id="tb_01">
+    <header>
+      <span class="eid">tb_01</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Show hourly average latency for checkout events over the last 7 days</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 32 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'PT1H'</i>) <i class='k'>AS</i> <i class='q'>"hour"</i>,
+       <i class='k'>AVG</i>(latency_ms) <i class='k'>AS</i> <i class='q'>"avg_latency_ms"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>WHERE</i> event_type = <i class='s'>'checkout'</i>
+  <i class='k'>AND</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'7'</i> DAY
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>hour</th><th>avg_latency_ms</th></tr></thead><tbody><tr><td>2026-08-14T18:00:00.000Z</td><td>112.0</td></tr><tr><td>2026-08-14T20:00:00.000Z</td><td>21.0</td></tr><tr><td>2026-08-14T22:00:00.000Z</td><td>45.0</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="tb_02">
+    <header>
+      <span class="eid">tb_02</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Daily revenue for the past 30 days</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 31 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"day"</i>,
+       <i class='k'>SUM</i>(revenue_usd) <i class='k'>AS</i> <i class='q'>"revenue_usd"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'30'</i> DAY
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>day</th><th>revenue_usd</th></tr></thead><tbody><tr><td>2026-07-22T00:00:00.000Z</td><td>133.43</td></tr><tr><td>2026-07-23T00:00:00.000Z</td><td>755.94</td></tr><tr><td>2026-07-24T00:00:00.000Z</td><td>1177.72</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="tb_03">
+    <header>
+      <span class="eid">tb_03</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Bucket call records into 5 minute windows for the last 6 hours and count them</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'PT5M'</i>) <i class='k'>AS</i> <i class='q'>"bucket"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"cdr_count"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'6'</i> HOUR
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>bucket</th><th>cdr_count</th></tr></thead><tbody><tr><td>2026-08-21T07:15:00.000Z</td><td>1</td></tr><tr><td>2026-08-21T07:25:00.000Z</td><td>1</td></tr><tr><td>2026-08-21T08:40:00.000Z</td><td>1</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="tb_04">
+    <header>
+      <span class="eid">tb_04</span>
+      <span class="ds-list"><code class='ds'>ds_game_sessions</code></span>
+    </header>
+    <p class="q">How many sessions started each week?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>DATE_TRUNC</i>(<i class='s'>'week'</i>, __time) <i class='k'>AS</i> <i class='q'>"week_start"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"session_count"</i>
+<i class='k'>FROM</i> ds_game_sessions
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>week_start</th><th>session_count</th></tr></thead><tbody><tr><td>2026-07-20T00:00:00.000Z</td><td>56</td></tr><tr><td>2026-07-27T00:00:00.000Z</td><td>108</td></tr><tr><td>2026-08-03T00:00:00.000Z</td><td>76</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="tb_05">
+    <header>
+      <span class="eid">tb_05</span>
+      <span class="ds-list"><code class='ds'>ds_iot_readings</code></span>
+    </header>
+    <p class="q">Count distinct reporting devices per hour for the last 2 days</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 28 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>FLOOR</i>(__time TO HOUR) <i class='k'>AS</i> <i class='q'>"hour"</i>,
+       <i class='f'>APPROX_COUNT_DISTINCT</i>(device_id) <i class='k'>AS</i> <i class='q'>"active_devices"</i>
+<i class='k'>FROM</i> ds_iot_readings
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'2'</i> DAY
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>hour</th><th>active_devices</th></tr></thead><tbody><tr><td>2026-08-19T09:00:00.000Z</td><td>1</td></tr><tr><td>2026-08-19T10:00:00.000Z</td><td>3</td></tr><tr><td>2026-08-19T12:00:00.000Z</td><td>2</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="tb_06">
+    <header>
+      <span class="eid">tb_06</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Monthly rated cost broken down by plan tier</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 6 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'P1M'</i>) <i class='k'>AS</i> <i class='q'>"month"</i>,
+       plan_tier,
+       <i class='k'>SUM</i>(rated_cost_usd) <i class='k'>AS</i> <i class='q'>"rated_cost_usd"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>GROUP BY</i> 1, 2
+<i class='k'>ORDER BY</i> 1, 2</code></pre>
+        <div class='tw'><table><thead><tr><th>month</th><th>plan_tier</th><th>rated_cost_usd</th></tr></thead><tbody><tr><td>2026-07-01T00:00:00.000Z</td><td>enterprise</td><td>504.6564</td></tr><tr><td>2026-07-01T00:00:00.000Z</td><td>postpaid</td><td>423.15720000000005</td></tr><tr><td>2026-07-01T00:00:00.000Z</td><td>prepaid</td><td>402.1955</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-relative_time">
+  <div class="chead">
+    <h2>Relative time windows</h2>
+    <p>resolved against CURRENT_TIMESTAMP, never a hardcoded anchor</p>
+    <span class="cn">5 examples</span>
+  </div>
+  
+  <article class="ex has-trap" id="rt_01">
+    <header>
+      <span class="eid">rt_01</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">How many alerts fired in the last 24 hours, by severity?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 4 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> severity,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"alert_count"</i>
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'24'</i> HOUR
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>severity</th><th>alert_count</th></tr></thead><tbody><tr><td>critical</td><td>5</td></tr><tr><td>high</td><td>4</td></tr><tr><td>low</td><td>1</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> severity, <i class='k'>COUNT</i>(*) <i class='k'>AS</i> alert_count <i class='k'>FROM</i> ds_sec_alerts <i class='k'>WHERE</i> __time &gt;= <i class='f'>NOW</i>() - <i class='k'>INTERVAL</i> <i class='s'>'24'</i> HOUR <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> No match found for function signature NOW() (line [1], column [77])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="rt_02">
+    <header>
+      <span class="eid">rt_02</span>
+      <span class="ds-list"><code class='ds'>ds_orders</code></span>
+    </header>
+    <p class="q">How many orders were placed yesterday?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"order_count"</i>
+<i class='k'>FROM</i> ds_orders
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>TIME_FLOOR</i>(<i class='f'>CURRENT_TIMESTAMP</i>, <i class='s'>'P1D'</i>) - <i class='k'>INTERVAL</i> <i class='s'>'1'</i> DAY
+  <i class='k'>AND</i> __time &lt; <i class='f'>TIME_FLOOR</i>(<i class='f'>CURRENT_TIMESTAMP</i>, <i class='s'>'P1D'</i>)</code></pre>
+        <div class='tw'><table><thead><tr><th>order_count</th></tr></thead><tbody><tr><td>22</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="rt_03">
+    <header>
+      <span class="eid">rt_03</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Error rate over the last 90 minutes</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>FILTER</i> (<i class='k'>WHERE</i> status_code &gt;= 500) * 1.0 / <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"error_rate"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'90'</i> MINUTE</code></pre>
+        <div class='tw'><table><thead><tr><th>error_rate</th></tr></thead><tbody><tr><td>1.0</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="rt_04">
+    <header>
+      <span class="eid">rt_04</span>
+      <span class="ds-list"><code class='ds'>ds_fin_txn</code></span>
+    </header>
+    <p class="q">Total approved transaction volume so far this month</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>SUM</i>(amountMinor) / 100.0 <i class='k'>AS</i> <i class='q'>"approved_volume"</i>
+<i class='k'>FROM</i> ds_fin_txn
+<i class='k'>WHERE</i> authResult = <i class='s'>'approved'</i>
+  <i class='k'>AND</i> __time &gt;= <i class='f'>TIME_FLOOR</i>(<i class='f'>CURRENT_TIMESTAMP</i>, <i class='s'>'P1M'</i>)</code></pre>
+        <div class='tw'><table><thead><tr><th>approved_volume</th></tr></thead><tbody><tr><td>309310.52</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="rt_05">
+    <header>
+      <span class="eid">rt_05</span>
+      <span class="ds-list"><code class='ds'>ds_ad_impressions</code></span>
+    </header>
+    <p class="q">Impressions per day for the last 7 complete days, excluding today</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 7 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"day"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"impressions"</i>
+<i class='k'>FROM</i> ds_ad_impressions
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>TIME_FLOOR</i>(<i class='f'>CURRENT_TIMESTAMP</i>, <i class='s'>'P1D'</i>) - <i class='k'>INTERVAL</i> <i class='s'>'7'</i> DAY
+  <i class='k'>AND</i> __time &lt; <i class='f'>TIME_FLOOR</i>(<i class='f'>CURRENT_TIMESTAMP</i>, <i class='s'>'P1D'</i>)
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>day</th><th>impressions</th></tr></thead><tbody><tr><td>2026-08-14T00:00:00.000Z</td><td>18</td></tr><tr><td>2026-08-15T00:00:00.000Z</td><td>23</td></tr><tr><td>2026-08-16T00:00:00.000Z</td><td>16</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-time_extract_format">
+  <div class="chead">
+    <h2>Extract and format</h2>
+    <p>TIME_EXTRACT, TIME_FORMAT, timezone arguments</p>
+    <span class="cn">4 examples</span>
+  </div>
+  
+  <article class="ex" id="tf_01">
+    <header>
+      <span class="eid">tf_01</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">What is the hour-of-day traffic profile?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 24 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_EXTRACT</i>(__time, <i class='s'>'HOUR'</i>) <i class='k'>AS</i> <i class='q'>"hour_of_day"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"event_count"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>hour_of_day</th><th>event_count</th></tr></thead><tbody><tr><td>0</td><td>18</td></tr><tr><td>1</td><td>25</td></tr><tr><td>2</td><td>25</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="tf_02">
+    <header>
+      <span class="eid">tf_02</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_game_sessions</code></span>
+    </header>
+    <p class="q">Which day of the week has the most play sessions?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 7 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_EXTRACT</i>(__time, <i class='s'>'DOW'</i>) <i class='k'>AS</i> <i class='q'>"day_of_week"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"session_count"</i>
+<i class='k'>FROM</i> ds_game_sessions
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>day_of_week</th><th>session_count</th></tr></thead><tbody><tr><td>1</td><td>66</td></tr><tr><td>7</td><td>64</td></tr><tr><td>4</td><td>62</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>DAYOFWEEK</i>(__time) <i class='k'>AS</i> dow, <i class='k'>COUNT</i>(*) <i class='k'>FROM</i> ds_game_sessions <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> No match found for function signature DAYOFWEEK(&lt;TIMESTAMP&gt;) (line [1], column [8])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="tf_03">
+    <header>
+      <span class="eid">tf_03</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Daily call volume labelled with dates in Asia/Kolkata local time</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 31 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FORMAT</i>(__time, <i class='s'>'yyyy-MM-dd'</i>, <i class='s'>'Asia/Kolkata'</i>) <i class='k'>AS</i> <i class='q'>"local_date"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"call_count"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>local_date</th><th>call_count</th></tr></thead><tbody><tr><td>2026-07-22</td><td>12</td></tr><tr><td>2026-07-23</td><td>27</td></tr><tr><td>2026-07-24</td><td>19</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TO_CHAR</i>(__time, <i class='s'>'YYYY-MM-DD'</i>) <i class='k'>AS</i> local_date, <i class='k'>COUNT</i>(*) <i class='k'>FROM</i> ds_telco_cdr <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> No match found for function signature TO_CHAR(&lt;TIMESTAMP&gt;, &lt;CHARACTER&gt;) (line [1], column [8])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="tf_04">
+    <header>
+      <span class="eid">tf_04</span>
+      <span class="ds-list"><code class='ds'>ds_ad_impressions</code></span>
+    </header>
+    <p class="q">Bucket impressions by hour of day in the America/New_York timezone</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 24 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_EXTRACT</i>(__time, <i class='s'>'HOUR'</i>, <i class='s'>'America/New_York'</i>) <i class='k'>AS</i> <i class='q'>"ny_hour"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"impressions"</i>
+<i class='k'>FROM</i> ds_ad_impressions
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>ny_hour</th><th>impressions</th></tr></thead><tbody><tr><td>0</td><td>28</td></tr><tr><td>1</td><td>18</td></tr><tr><td>2</td><td>12</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-epoch_time_column">
+  <div class="chead">
+    <h2>Epoch columns</h2>
+    <p>business time held as BIGINT, not TIMESTAMP</p>
+    <span class="cn">4 examples</span>
+  </div>
+  
+  <article class="ex has-trap" id="ep_01">
+    <header>
+      <span class="eid">ep_01</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Average latency bucketed by the hour the client started the request, last 3 days</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 44 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(<i class='f'>MILLIS_TO_TIMESTAMP</i>(request_started_at_ms), <i class='s'>'PT1H'</i>) <i class='k'>AS</i> <i class='q'>"request_hour"</i>,
+       <i class='k'>AVG</i>(latency_ms) <i class='k'>AS</i> <i class='q'>"avg_latency_ms"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'3'</i> DAY
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>request_hour</th><th>avg_latency_ms</th></tr></thead><tbody><tr><td>2026-08-18T11:00:00.000Z</td><td>78.0</td></tr><tr><td>2026-08-18T12:00:00.000Z</td><td>19.0</td></tr><tr><td>2026-08-18T13:00:00.000Z</td><td>14.0</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(request_started_at_ms, <i class='s'>'PT1H'</i>) <i class='k'>AS</i> request_hour, <i class='k'>AVG</i>(latency_ms) <i class='k'>FROM</i> ds_web_events <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Cannot apply 'TIME_FLOOR' to arguments of type 'TIME_FLOOR(&lt;BIGINT&gt;, &lt;CHAR(4)&gt;)'. Supported form(s): 'TIME_FLOOR(&lt;TIMESTAMP&gt;, &lt;CHARACTER&gt;, [&lt;TIMESTAMP&gt;, [&lt;CHARACTER&gt;]])' (line [1], column [8])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="ep_02">
+    <header>
+      <span class="eid">ep_02</span><span class='tag soft'>silent trap</span>
+      <span class="ds-list"><code class='ds'>ds_ad_impressions</code></span>
+    </header>
+    <p class="q">Daily impression counts based on the ad server timestamp rather than log arrival time</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 31 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(<i class='f'>MILLIS_TO_TIMESTAMP</i>(served_at_epoch_s * 1000), <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"served_day"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"impressions"</i>
+<i class='k'>FROM</i> ds_ad_impressions
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>served_day</th><th>impressions</th></tr></thead><tbody><tr><td>2026-07-22T00:00:00.000Z</td><td>10</td></tr><tr><td>2026-07-23T00:00:00.000Z</td><td>17</td></tr><tr><td>2026-07-24T00:00:00.000Z</td><td>17</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(<i class='f'>MILLIS_TO_TIMESTAMP</i>(served_at_epoch_s), <i class='s'>'P1D'</i>) <i class='k'>AS</i> served_day, <i class='k'>COUNT</i>(*) <i class='k'>FROM</i> ds_ad_impressions <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict warn'><strong>Druid accepts it and the answer is wrong.</strong> served_at_epoch_s is SECONDS; without *1000 the dates land in 1970</p><div class='tw'><table><thead><tr><th>served_day</th><th>EXPR$1</th></tr></thead><tbody><tr><td>1970-01-21T00:00:00.000Z</td><td>500</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="ep_03">
+    <header>
+      <span class="eid">ep_03</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Average queueing delay between client request start and server log time</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>AVG</i>(<i class='f'>TIMESTAMP_TO_MILLIS</i>(__time) - request_started_at_ms) <i class='k'>AS</i> <i class='q'>"avg_queue_ms"</i>
+<i class='k'>FROM</i> ds_web_events</code></pre>
+        <div class='tw'><table><thead><tr><th>avg_queue_ms</th></tr></thead><tbody><tr><td>2588.7</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="ep_04">
+    <header>
+      <span class="eid">ep_04</span>
+      <span class="ds-list"><code class='ds'>ds_ad_impressions</code></span>
+    </header>
+    <p class="q">Clicks in the last day according to the ad server clock</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"clicks"</i>
+<i class='k'>FROM</i> ds_ad_impressions
+<i class='k'>WHERE</i> was_clicked = 1
+  <i class='k'>AND</i> <i class='f'>MILLIS_TO_TIMESTAMP</i>(served_at_epoch_s * 1000) &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'1'</i> DAY</code></pre>
+        <div class='tw'><table><thead><tr><th>clicks</th></tr></thead><tbody><tr><td>0</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-string_time_column">
+  <div class="chead">
+    <h2>String time columns</h2>
+    <p>business time held as VARCHAR, parsed with TIME_PARSE</p>
+    <span class="cn">3 examples</span>
+  </div>
+  
+  <article class="ex has-trap" id="st_01">
+    <header>
+      <span class="eid">st_01</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_iot_readings</code></span>
+    </header>
+    <p class="q">Average sensor value per hour based on when the device took the reading</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 28 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(<i class='f'>TIME_PARSE</i>(reading_taken_at, <i class='s'>'yyyy-MM-dd HH:mm:ss'</i>), <i class='s'>'PT1H'</i>) <i class='k'>AS</i> <i class='q'>"reading_hour"</i>,
+       <i class='k'>AVG</i>(<i class='q'>"value"</i>) <i class='k'>AS</i> <i class='q'>"avg_value"</i>
+<i class='k'>FROM</i> ds_iot_readings
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'2'</i> DAY
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>reading_hour</th><th>avg_value</th></tr></thead><tbody><tr><td>2026-08-19T09:00:00.000Z</td><td>832.733</td></tr><tr><td>2026-08-19T10:00:00.000Z</td><td>441.952</td></tr><tr><td>2026-08-19T12:00:00.000Z</td><td>171.566</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(reading_taken_at, <i class='s'>'PT1H'</i>) <i class='k'>AS</i> reading_hour, <i class='k'>AVG</i>(value) <i class='k'>FROM</i> ds_iot_readings <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Received an unexpected token [value )] (line [1], column [66]), acceptable options: ["DISTINCT", "ALL", &lt;IDENTIFIER&gt;, &lt;HYPHENATED_IDENTIFIER&gt;, &lt;QUOTED_IDENTIFIER&gt;, &lt;BACK_QUOTED_IDENTIFIER&gt;, &lt;BIG_QUERY_BACK_QUOTED_IDENTIFIER&gt;, &lt;BRACKET_QUOTED_IDENTIFIER&gt;, &lt;UNIC</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="st_02">
+    <header>
+      <span class="eid">st_02</span>
+      <span class="ds-list"><code class='ds'>ds_fin_txn</code></span>
+    </header>
+    <p class="q">How many transactions settled each day?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 33 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(<i class='f'>TIME_PARSE</i>(settledAt, <i class='s'>'yyyy-MM-dd''T''HH:mm:ss''Z'''</i>), <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"settle_day"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"txn_count"</i>
+<i class='k'>FROM</i> ds_fin_txn
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>settle_day</th><th>txn_count</th></tr></thead><tbody><tr><td>2026-07-22T00:00:00.000Z</td><td>2</td></tr><tr><td>2026-07-23T00:00:00.000Z</td><td>8</td></tr><tr><td>2026-07-24T00:00:00.000Z</td><td>21</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="st_03">
+    <header>
+      <span class="eid">st_03</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_fin_txn</code></span>
+    </header>
+    <p class="q">Average settlement lag in hours by card network</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> cardNetwork,
+       <i class='k'>AVG</i>(<i class='f'>TIMESTAMPDIFF</i>(HOUR, __time, <i class='f'>TIME_PARSE</i>(settledAt, <i class='s'>'yyyy-MM-dd''T''HH:mm:ss''Z'''</i>))) <i class='k'>AS</i> <i class='q'>"avg_lag_hours"</i>
+<i class='k'>FROM</i> ds_fin_txn
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>cardNetwork</th><th>avg_lag_hours</th></tr></thead><tbody><tr><td>visa</td><td>25.27699530516432</td></tr><tr><td>amex</td><td>24.19796954314721</td></tr><tr><td>mastercard</td><td>23.926315789473684</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> cardNetwork, <i class='k'>AVG</i>(<i class='f'>DATEDIFF</i>(hour, __time, settledAt)) <i class='k'>AS</i> avg_lag_hours <i class='k'>FROM</i> ds_fin_txn <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Received an unexpected token [hour ,] (line [1], column [34]), acceptable options: ["EXISTS", "NOT", "UNIQUE", "+", "-", "DISTINCT", "ALL", &lt;IDENTIFIER&gt;, &lt;HYPHENATED_IDENTIFIER&gt;, &lt;QUOTED_IDENTIFIER&gt;, &lt;BACK_QUOTED_IDENTIFIER&gt;, &lt;BIG_QUERY_BACK_QUOTED_IDENTIFIER&gt;</p>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-order_by_restriction">
+  <div class="chead">
+    <h2>The ORDER BY restriction</h2>
+    <p>a table scan can only order by __time</p>
+    <span class="cn">5 examples</span>
+  </div>
+  
+  <article class="ex has-trap" id="ob_01">
+    <header>
+      <span class="eid">ob_01</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Show me the 10 slowest requests</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 10 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> session_id,
+       page_path,
+       <i class='k'>MAX</i>(latency_ms) <i class='k'>AS</i> <i class='q'>"latency_ms"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>GROUP BY</i> 1, 2
+<i class='k'>ORDER BY</i> 3 <i class='k'>DESC</i>
+<i class='k'>LIMIT</i> 10</code></pre>
+        <div class='tw'><table><thead><tr><th>session_id</th><th>page_path</th><th>latency_ms</th></tr></thead><tbody><tr><td>sess-0028</td><td>/checkout</td><td>1025</td></tr><tr><td>sess-0099</td><td>/checkout</td><td>634</td></tr><tr><td>sess-0012</td><td>/cart</td><td>571</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> session_id, page_path, latency_ms <i class='k'>FROM</i> ds_web_events <i class='k'>ORDER BY</i> latency_ms <i class='k'>DESC</i> <i class='k'>LIMIT</i> 10</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Query could not be planned. A possible reason is [SQL query requires ordering a table by non-time column [[latency_ms]], which is not supported.]</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="ob_02">
+    <header>
+      <span class="eid">ob_02</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">List the 20 most recent alerts with their rule and severity</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 20 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> __time,
+       rule_name,
+       severity
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>ORDER BY</i> __time <i class='k'>DESC</i>
+<i class='k'>LIMIT</i> 20</code></pre>
+        <div class='tw'><table><thead><tr><th>__time</th><th>rule_name</th><th>severity</th></tr></thead><tbody><tr><td>2026-08-21T08:13:32.715Z</td><td>beaconing_dns</td><td>low</td></tr><tr><td>2026-08-21T00:38:06.643Z</td><td>mass_download</td><td>medium</td></tr><tr><td>2026-08-21T00:34:38.987Z</td><td>suspicious_powershell</td><td>critical</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> __time, rule_name, severity <i class='k'>FROM</i> ds_sec_alerts <i class='k'>ORDER BY</i> severity <i class='k'>DESC</i> <i class='k'>LIMIT</i> 20</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Query could not be planned. A possible reason is [SQL query requires ordering a table by non-time column [[severity]], which is not supported.]</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="ob_03">
+    <header>
+      <span class="eid">ob_03</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_orders</code></span>
+    </header>
+    <p class="q">Rank customers by how much they spent, highest first</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 25 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> customer_id,
+       <i class='k'>SUM</i>(quantity * unit_price_usd - discount_usd) <i class='k'>AS</i> <i class='q'>"net_spend_usd"</i>
+<i class='k'>FROM</i> ds_orders
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i>
+<i class='k'>LIMIT</i> 25</code></pre>
+        <div class='tw'><table><thead><tr><th>customer_id</th><th>net_spend_usd</th></tr></thead><tbody><tr><td>cust-0205</td><td>14948.54</td></tr><tr><td>cust-0030</td><td>12419.75</td></tr><tr><td>cust-0031</td><td>11826.019999999999</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> customer_id, quantity * unit_price_usd - discount_usd <i class='k'>AS</i> net_spend_usd <i class='k'>FROM</i> ds_orders <i class='k'>ORDER BY</i> net_spend_usd <i class='k'>DESC</i> <i class='k'>LIMIT</i> 25</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Query could not be planned. A possible reason is [SQL query requires ordering a table by non-time column [[v0]], which is not supported.]</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="ob_04">
+    <header>
+      <span class="eid">ob_04</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Which cells had the worst average setup latency? Top 15.</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 15 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> cell_id,
+       <i class='k'>AVG</i>(setup_latency_ms) <i class='k'>AS</i> <i class='q'>"avg_setup_latency_ms"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"cdr_count"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i>
+<i class='k'>LIMIT</i> 15</code></pre>
+        <div class='tw'><table><thead><tr><th>cell_id</th><th>avg_setup_latency_ms</th><th>cdr_count</th></tr></thead><tbody><tr><td>cell-2860</td><td>1360.0</td><td>1</td></tr><tr><td>cell-4018</td><td>1306.0</td><td>1</td></tr><tr><td>cell-8889</td><td>817.0</td><td>1</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="ob_05">
+    <header>
+      <span class="eid">ob_05</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_iot_readings</code></span>
+    </header>
+    <p class="q">Show the highest readings first, just the top 5 rows</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> device_id,
+       metric_name,
+       <i class='k'>MAX</i>(<i class='q'>"value"</i>) <i class='k'>AS</i> <i class='q'>"max_value"</i>
+<i class='k'>FROM</i> ds_iot_readings
+<i class='k'>GROUP BY</i> 1, 2
+<i class='k'>ORDER BY</i> 3 <i class='k'>DESC</i>
+<i class='k'>LIMIT</i> 5</code></pre>
+        <div class='tw'><table><thead><tr><th>device_id</th><th>metric_name</th><th>max_value</th></tr></thead><tbody><tr><td>dev-0111</td><td>vibration_mm_s</td><td>899.958</td></tr><tr><td>dev-0088</td><td>pressure_kpa</td><td>899.481</td></tr><tr><td>dev-0073</td><td>pressure_kpa</td><td>899.193</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> device_id, metric_name, <i class='q'>"value"</i> <i class='k'>FROM</i> ds_iot_readings <i class='k'>ORDER BY</i> <i class='q'>"value"</i> <i class='k'>DESC</i> <i class='k'>LIMIT</i> 5</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Query could not be planned. A possible reason is [SQL query requires ordering a table by non-time column [[value]], which is not supported.]</p>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-reserved_alias">
+  <div class="chead">
+    <h2>Reserved-word aliases</h2>
+    <p>AS hour is a syntax error; AS "hour" is not</p>
+    <span class="cn">3 examples</span>
+  </div>
+  
+  <article class="ex has-trap" id="ra_01">
+    <header>
+      <span class="eid">ra_01</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Give me a count of events per day labelled as day and count</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 31 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"day"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"count"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>day</th><th>count</th></tr></thead><tbody><tr><td>2026-07-22T00:00:00.000Z</td><td>11</td></tr><tr><td>2026-07-23T00:00:00.000Z</td><td>16</td></tr><tr><td>2026-07-24T00:00:00.000Z</td><td>27</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'P1D'</i>) <i class='k'>AS</i> day, <i class='k'>COUNT</i>(*) <i class='k'>AS</i> count <i class='k'>FROM</i> ds_web_events <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Incorrect syntax near the keyword 'AS' at line 1, column 34.
+Was expecting one of:
+    &lt;EOF&gt; 
+    "ORDER" ...
+    "LIMIT" ...
+    "OFFSET" ...
+    "FETCH" ...
+    ";" ...
+    "," ...
+    "FROM" ...
+    "AS" &lt;IDENTIFIER&gt; ...
+    "AS" &lt;HYPHENATED_IDENTIFIER&gt; ...</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="ra_02">
+    <header>
+      <span class="eid">ra_02</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_iot_readings</code></span>
+    </header>
+    <p class="q">Average value per metric, with the column called value</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> metric_name,
+       <i class='k'>AVG</i>(<i class='q'>"value"</i>) <i class='k'>AS</i> <i class='q'>"value"</i>
+<i class='k'>FROM</i> ds_iot_readings
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>metric_name</th><th>value</th></tr></thead><tbody><tr><td>pressure_kpa</td><td>442.19641614906817</td></tr><tr><td>vibration_mm_s</td><td>434.3124699453546</td></tr><tr><td>temperature_c</td><td>413.82867948717956</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> metric_name, <i class='k'>AVG</i>(value) <i class='k'>AS</i> value <i class='k'>FROM</i> ds_iot_readings <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Received an unexpected token [value )] (line [1], column [25]), acceptable options: ["DISTINCT", "ALL", &lt;IDENTIFIER&gt;, &lt;HYPHENATED_IDENTIFIER&gt;, &lt;QUOTED_IDENTIFIER&gt;, &lt;BACK_QUOTED_IDENTIFIER&gt;, &lt;BIG_QUERY_BACK_QUOTED_IDENTIFIER&gt;, &lt;BRACKET_QUOTED_IDENTIFIER&gt;, &lt;UNIC</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="ra_03">
+    <header>
+      <span class="eid">ra_03</span>
+      <span class="ds-list"><code class='ds'>ds_fin_txn</code></span>
+    </header>
+    <p class="q">Approved transaction count per hour, with columns named hour and timestamp</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 273 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'PT1H'</i>) <i class='k'>AS</i> <i class='q'>"hour"</i>,
+       <i class='k'>MIN</i>(__time) <i class='k'>AS</i> <i class='q'>"timestamp"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"approved_count"</i>
+<i class='k'>FROM</i> ds_fin_txn
+<i class='k'>WHERE</i> authResult = <i class='s'>'approved'</i>
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>hour</th><th>timestamp</th><th>approved_count</th></tr></thead><tbody><tr><td>2026-07-22T11:00:00.000Z</td><td>2026-07-22T11:21:23.544Z</td><td>1</td></tr><tr><td>2026-07-22T14:00:00.000Z</td><td>2026-07-22T14:01:04.893Z</td><td>1</td></tr><tr><td>2026-07-22T17:00:00.000Z</td><td>2026-07-22T17:01:55.971Z</td><td>1</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-timestamp_literal">
+  <div class="chead">
+    <h2>TIMESTAMP literals</h2>
+    <p>'yyyy-MM-dd HH:mm:ss' only — no T, no Z</p>
+    <span class="cn">2 examples</span>
+  </div>
+  
+  <article class="ex has-trap" id="tl_01">
+    <header>
+      <span class="eid">tl_01</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_orders</code></span>
+    </header>
+    <p class="q">Orders placed between 2026-08-01 and 2026-08-08</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"order_count"</i>
+<i class='k'>FROM</i> ds_orders
+<i class='k'>WHERE</i> __time &gt;= <i class='k'>TIMESTAMP</i> <i class='s'>'2026-08-01 00:00:00'</i>
+  <i class='k'>AND</i> __time &lt; <i class='k'>TIMESTAMP</i> <i class='s'>'2026-08-08 00:00:00'</i></code></pre>
+        <div class='tw'><table><thead><tr><th>order_count</th></tr></thead><tbody><tr><td>116</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>FROM</i> ds_orders <i class='k'>WHERE</i> __time &gt;= <i class='k'>TIMESTAMP</i> <i class='s'>'2026-08-01T00:00:00Z'</i> <i class='k'>AND</i> __time &lt; <i class='k'>TIMESTAMP</i> <i class='s'>'2026-08-08T00:00:00Z'</i></code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Illegal TIMESTAMP literal '2026-08-01T00:00:00Z': not in format 'yyyy-MM-dd HH:mm:ss' (line [1], column [48])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="tl_02">
+    <header>
+      <span class="eid">tl_02</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Count call records inside the interval 2026-08-01 to 2026-08-15</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"cdr_count"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>WHERE</i> <i class='f'>TIME_IN_INTERVAL</i>(__time, <i class='s'>'2026-08-01/2026-08-15'</i>)</code></pre>
+        <div class='tw'><table><thead><tr><th>cdr_count</th></tr></thead><tbody><tr><td>337</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-approx_agg">
+  <div class="chead">
+    <h2>Approximate aggregates</h2>
+    <p>APPROX_COUNT_DISTINCT, APPROX_QUANTILE_DS</p>
+    <span class="cn">4 examples</span>
+  </div>
+  
+  <article class="ex" id="aa_01">
+    <header>
+      <span class="eid">aa_01</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">How many unique users visited in the last 7 days?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>APPROX_COUNT_DISTINCT</i>(user_id) <i class='k'>AS</i> <i class='q'>"unique_users"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'7'</i> DAY</code></pre>
+        <div class='tw'><table><thead><tr><th>unique_users</th></tr></thead><tbody><tr><td>109</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="aa_02">
+    <header>
+      <span class="eid">aa_02</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">What is p95 latency by device type?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> device_type,
+       <i class='f'>APPROX_QUANTILE_DS</i>(latency_ms, 0.95) <i class='k'>AS</i> <i class='q'>"p95_latency_ms"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>device_type</th><th>p95_latency_ms</th></tr></thead><tbody><tr><td>desktop</td><td>386.0</td></tr><tr><td>mobile</td><td>344.0</td></tr><tr><td>tablet</td><td>289.0</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="aa_03">
+    <header>
+      <span class="eid">aa_03</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Give me p50, p95 and p99 call setup latency per network generation</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> network_gen,
+       <i class='f'>APPROX_QUANTILE_DS</i>(setup_latency_ms, 0.50) <i class='k'>AS</i> <i class='q'>"p50_ms"</i>,
+       <i class='f'>APPROX_QUANTILE_DS</i>(setup_latency_ms, 0.95) <i class='k'>AS</i> <i class='q'>"p95_ms"</i>,
+       <i class='f'>APPROX_QUANTILE_DS</i>(setup_latency_ms, 0.99) <i class='k'>AS</i> <i class='q'>"p99_ms"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>network_gen</th><th>p50_ms</th><th>p95_ms</th><th>p99_ms</th></tr></thead><tbody><tr><td>3g</td><td>152.0</td><td>449.0</td><td>809.0</td></tr><tr><td>4g</td><td>149.0</td><td>424.0</td><td>651.0</td></tr><tr><td>5g</td><td>136.0</td><td>514.0</td><td>810.0</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> network_gen, <i class='f'>MEDIAN</i>(setup_latency_ms) <i class='k'>AS</i> p50_ms <i class='k'>FROM</i> ds_telco_cdr <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> No match found for function signature MEDIAN(&lt;NUMERIC&gt;) (line [1], column [21])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="aa_04">
+    <header>
+      <span class="eid">aa_04</span>
+      <span class="ds-list"><code class='ds'>ds_ad_impressions</code></span>
+    </header>
+    <p class="q">Unique creatives served per campaign</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> campaign_name,
+       <i class='f'>APPROX_COUNT_DISTINCT</i>(creative_id) <i class='k'>AS</i> <i class='q'>"unique_creatives"</i>
+<i class='k'>FROM</i> ds_ad_impressions
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>campaign_name</th><th>unique_creatives</th></tr></thead><tbody><tr><td>spring_launch</td><td>60</td></tr><tr><td>always_on_brand</td><td>56</td></tr><tr><td>retarget_cart</td><td>55</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-latest_earliest">
+  <div class="chead">
+    <h2>LATEST and EARLIEST</h2>
+    <p>Druid's time-ordered aggregators</p>
+    <span class="cn">3 examples</span>
+  </div>
+  
+  <article class="ex" id="le_01">
+    <header>
+      <span class="eid">le_01</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">What is the most recent analyst verdict for each host?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 50 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> host_id,
+       <i class='f'>LATEST</i>(analyst_verdict, 32) <i class='k'>AS</i> <i class='q'>"latest_verdict"</i>
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1
+<i class='k'>LIMIT</i> 50</code></pre>
+        <div class='tw'><table><thead><tr><th>host_id</th><th>latest_verdict</th></tr></thead><tbody><tr><td>host-000</td><td>pending</td></tr><tr><td>host-001</td><td>true_positive</td></tr><tr><td>host-002</td><td>true_positive</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="le_02">
+    <header>
+      <span class="eid">le_02</span>
+      <span class="ds-list"><code class='ds'>ds_iot_readings</code></span>
+    </header>
+    <p class="q">First firmware version we ever saw for each device</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 50 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> device_id,
+       <i class='f'>EARLIEST</i>(firmware, 16) <i class='k'>AS</i> <i class='q'>"first_firmware"</i>
+<i class='k'>FROM</i> ds_iot_readings
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1
+<i class='k'>LIMIT</i> 50</code></pre>
+        <div class='tw'><table><thead><tr><th>device_id</th><th>first_firmware</th></tr></thead><tbody><tr><td>dev-0000</td><td>2.1.0</td></tr><tr><td>dev-0001</td><td>1.5.0</td></tr><tr><td>dev-0002</td><td>1.4.2</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="le_03">
+    <header>
+      <span class="eid">le_03</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Latest contract status per subscriber, ranked by their total rated cost</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 20 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> subscriber_id,
+       <i class='f'>LATEST_BY</i>(contract_status, __time, 16) <i class='k'>AS</i> <i class='q'>"current_status"</i>,
+       <i class='k'>SUM</i>(rated_cost_usd) <i class='k'>AS</i> <i class='q'>"total_cost_usd"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 3 <i class='k'>DESC</i>
+<i class='k'>LIMIT</i> 20</code></pre>
+        <div class='tw'><table><thead><tr><th>subscriber_id</th><th>current_status</th><th>total_cost_usd</th></tr></thead><tbody><tr><td>sub-00236</td><td>suspended</td><td>46.2129</td></tr><tr><td>sub-00168</td><td>suspended</td><td>42.9302</td></tr><tr><td>sub-00226</td><td>churned</td><td>39.9069</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-mvd">
+  <div class="chead">
+    <h2>Multi-value dimensions</h2>
+    <p>MV_CONTAINS, MV_TO_ARRAY, UNNEST</p>
+    <span class="cn">4 examples</span>
+  </div>
+  
+  <article class="ex" id="mv_01">
+    <header>
+      <span class="eid">mv_01</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">How many events were in the new_checkout experiment?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"event_count"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>WHERE</i> <i class='f'>MV_CONTAINS</i>(experiment_tags, <i class='s'>'new_checkout'</i>)</code></pre>
+        <div class='tw'><table><thead><tr><th>event_count</th></tr></thead><tbody><tr><td>236</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="mv_02">
+    <header>
+      <span class="eid">mv_02</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">Count alerts per MITRE tag</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> t.tag <i class='k'>AS</i> <i class='q'>"tag"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"alert_count"</i>
+<i class='k'>FROM</i> ds_sec_alerts, <i class='k'>UNNEST</i>(<i class='f'>MV_TO_ARRAY</i>(alert_tags)) <i class='k'>AS</i> t(tag)
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>tag</th><th>alert_count</th></tr></thead><tbody><tr><td>persistence</td><td>204</td></tr><tr><td>lateral_movement</td><td>201</td></tr><tr><td>discovery</td><td>197</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> t.tag, <i class='k'>COUNT</i>(*) <i class='k'>FROM</i> ds_sec_alerts, <i class='k'>UNNEST</i>(alert_tags) <i class='k'>AS</i> t(tag) <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Cannot apply 'UNNEST' to arguments of type 'UNNEST(&lt;VARCHAR&gt;)'. Supported form(s): 'UNNEST(&lt;MULTISET&gt;)'
+'UNNEST(&lt;ARRAY&gt;)'
+'UNNEST(&lt;MAP&gt;)'
+UNNEST(&lt;MULTISET&gt;)
+UNNEST(&lt;ARRAY&gt;)
+UNNEST(&lt;MAP&gt;) (line [1], column [44])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="mv_03">
+    <header>
+      <span class="eid">mv_03</span>
+      <span class="ds-list"><code class='ds'>ds_ad_impressions</code></span>
+    </header>
+    <p class="q">Average win price for video creatives</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>AVG</i>(win_price_usd) <i class='k'>AS</i> <i class='q'>"avg_win_price_usd"</i>
+<i class='k'>FROM</i> ds_ad_impressions
+<i class='k'>WHERE</i> <i class='f'>MV_CONTAINS</i>(creative_tags, <i class='s'>'video'</i>)
+  <i class='k'>AND</i> win_price_usd &gt; 0</code></pre>
+        <div class='tw'><table><thead><tr><th>avg_win_price_usd</th></tr></thead><tbody><tr><td>7.424988679245281</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="mv_04">
+    <header>
+      <span class="eid">mv_04</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Revenue per experiment tag, restricted to the price_test and banner_v2 experiments</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 2 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> t.tag <i class='k'>AS</i> <i class='q'>"experiment"</i>,
+       <i class='k'>SUM</i>(revenue_usd) <i class='k'>AS</i> <i class='q'>"revenue_usd"</i>
+<i class='k'>FROM</i> ds_web_events, <i class='k'>UNNEST</i>(<i class='f'>MV_TO_ARRAY</i>(experiment_tags)) <i class='k'>AS</i> t(tag)
+<i class='k'>WHERE</i> t.tag <i class='k'>IN</i> (<i class='s'>'price_test'</i>, <i class='s'>'banner_v2'</i>)
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>experiment</th><th>revenue_usd</th></tr></thead><tbody><tr><td>banner_v2</td><td>12484.050000000001</td></tr><tr><td>price_test</td><td>9439.35</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-json_string">
+  <div class="chead">
+    <h2>JSON stored as string</h2>
+    <p>PARSE_JSON before JSON_VALUE — the silent trap</p>
+    <span class="cn">3 examples</span>
+  </div>
+  
+  <article class="ex has-trap" id="js_01">
+    <header>
+      <span class="eid">js_01</span><span class='tag soft'>silent trap</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Break down events by the tier field inside the attributes payload</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>JSON_VALUE</i>(<i class='f'>PARSE_JSON</i>(attrs_json), <i class='s'>'$.tier'</i>) <i class='k'>AS</i> <i class='q'>"tier"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"event_count"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>tier</th><th>event_count</th></tr></thead><tbody><tr><td>free</td><td>208</td></tr><tr><td>pro</td><td>205</td></tr><tr><td>plus</td><td>187</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>JSON_VALUE</i>(attrs_json, <i class='s'>'$.tier'</i>) <i class='k'>AS</i> tier, <i class='k'>COUNT</i>(*) <i class='k'>FROM</i> ds_web_events <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict warn'><strong>Druid accepts it and the answer is wrong.</strong> runs fine but returns NULL for every row -- the string is never parsed</p><div class='tw'><table><thead><tr><th>tier</th><th>EXPR$1</th></tr></thead><tbody><tr><td>None</td><td>600</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="js_02">
+    <header>
+      <span class="eid">js_02</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">Alert counts by environment from the enrichment payload, critical only</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>JSON_VALUE</i>(<i class='f'>PARSE_JSON</i>(enrichment_json), <i class='s'>'$.env'</i>) <i class='k'>AS</i> <i class='q'>"env"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"alert_count"</i>
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>WHERE</i> severity = <i class='s'>'critical'</i>
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>env</th><th>alert_count</th></tr></thead><tbody><tr><td>staging</td><td>51</td></tr><tr><td>prod</td><td>43</td></tr><tr><td>dev</td><td>40</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="js_03">
+    <header>
+      <span class="eid">js_03</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">How many alerts are on hosts whose patch level is not current?</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"alert_count"</i>
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>WHERE</i> <i class='f'>JSON_VALUE</i>(<i class='f'>TRY_PARSE_JSON</i>(enrichment_json), <i class='s'>'$.patch_level'</i>) &lt;&gt; <i class='s'>'current'</i></code></pre>
+        <div class='tw'><table><thead><tr><th>alert_count</th></tr></thead><tbody><tr><td>389</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-lookup">
+  <div class="chead">
+    <h2>Lookups</h2>
+    <p>LOOKUP() against a registered map</p>
+    <span class="cn">3 examples</span>
+  </div>
+  
+  <article class="ex" id="lk_01">
+    <header>
+      <span class="eid">lk_01</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">Alert counts by host criticality tier</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>LOOKUP</i>(host_id, <i class='s'>'host_tier'</i>) <i class='k'>AS</i> <i class='q'>"tier"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"alert_count"</i>
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>tier</th><th>alert_count</th></tr></thead><tbody><tr><td>gold</td><td>184</td></tr><tr><td>silver</td><td>165</td></tr><tr><td>bronze</td><td>151</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="lk_02">
+    <header>
+      <span class="eid">lk_02</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">Critical alerts on gold-tier hosts in the last 14 days</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> rule_name,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"alert_count"</i>
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>WHERE</i> severity = <i class='s'>'critical'</i>
+  <i class='k'>AND</i> <i class='f'>LOOKUP</i>(host_id, <i class='s'>'host_tier'</i>) = <i class='s'>'gold'</i>
+  <i class='k'>AND</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'14'</i> DAY
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>rule_name</th><th>alert_count</th></tr></thead><tbody><tr><td>suspicious_powershell</td><td>7</td></tr><tr><td>impossible_travel</td><td>6</td></tr><tr><td>beaconing_dns</td><td>5</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="lk_03">
+    <header>
+      <span class="eid">lk_03</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">Bytes transferred per tier per day</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 90 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"day"</i>,
+       <i class='f'>LOOKUP</i>(host_id, <i class='s'>'host_tier'</i>) <i class='k'>AS</i> <i class='q'>"tier"</i>,
+       <i class='k'>SUM</i>(bytes_transferred) <i class='k'>AS</i> <i class='q'>"bytes_transferred"</i>
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>GROUP BY</i> 1, 2
+<i class='k'>ORDER BY</i> 1, 2</code></pre>
+        <div class='tw'><table><thead><tr><th>day</th><th>tier</th><th>bytes_transferred</th></tr></thead><tbody><tr><td>2026-07-22T00:00:00.000Z</td><td>gold</td><td>173328733</td></tr><tr><td>2026-07-22T00:00:00.000Z</td><td>silver</td><td>91205836</td></tr><tr><td>2026-07-23T00:00:00.000Z</td><td>bronze</td><td>209739182</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-join">
+  <div class="chead">
+    <h2>Joins</h2>
+    <p>cross-datasource joins, which Druid 35 handles fine</p>
+    <span class="cn">3 examples</span>
+  </div>
+  
+  <article class="ex" id="jn_01">
+    <header>
+      <span class="eid">jn_01</span>
+      <span class="ds-list"><code class='ds'>ds_orders</code> <code class='ds'>ds_products</code></span>
+    </header>
+    <p class="q">Revenue by product category</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> p.category <i class='k'>AS</i> <i class='q'>"category"</i>,
+       <i class='k'>SUM</i>(o.quantity * o.unit_price_usd - o.discount_usd) <i class='k'>AS</i> <i class='q'>"net_revenue_usd"</i>
+<i class='k'>FROM</i> ds_orders o
+<i class='k'>JOIN</i> ds_products p <i class='k'>ON</i> o.product_sku = p.sku
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>category</th><th>net_revenue_usd</th></tr></thead><tbody><tr><td>electronics</td><td>244866.68000000005</td></tr><tr><td>home</td><td>171228.77000000002</td></tr><tr><td>grocery</td><td>169944.03000000003</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="jn_02">
+    <header>
+      <span class="eid">jn_02</span>
+      <span class="ds-list"><code class='ds'>ds_orders</code> <code class='ds'>ds_products</code></span>
+    </header>
+    <p class="q">Top 10 brands by units sold in the last 30 days</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 6 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> p.brand <i class='k'>AS</i> <i class='q'>"brand"</i>,
+       <i class='k'>SUM</i>(o.quantity) <i class='k'>AS</i> <i class='q'>"units_sold"</i>
+<i class='k'>FROM</i> ds_orders o
+<i class='k'>JOIN</i> ds_products p <i class='k'>ON</i> o.product_sku = p.sku
+<i class='k'>WHERE</i> o.__time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'30'</i> DAY
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i>
+<i class='k'>LIMIT</i> 10</code></pre>
+        <div class='tw'><table><thead><tr><th>brand</th><th>units_sold</th></tr></thead><tbody><tr><td>acme</td><td>429</td></tr><tr><td>umbrella</td><td>410</td></tr><tr><td>initech</td><td>356</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="jn_03">
+    <header>
+      <span class="eid">jn_03</span>
+      <span class="ds-list"><code class='ds'>ds_orders</code> <code class='ds'>ds_products</code></span>
+    </header>
+    <p class="q">Order counts per channel including any SKUs missing from the catalogue</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 4 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> o.channel <i class='k'>AS</i> <i class='q'>"channel"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"order_count"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>FILTER</i> (<i class='k'>WHERE</i> p.sku <i class='k'>IS</i> <i class='k'>NULL</i>) <i class='k'>AS</i> <i class='q'>"uncatalogued"</i>
+<i class='k'>FROM</i> ds_orders o
+<i class='k'>LEFT JOIN</i> ds_products p <i class='k'>ON</i> o.product_sku = p.sku
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>channel</th><th>order_count</th><th>uncatalogued</th></tr></thead><tbody><tr><td>android</td><td>195</td><td>41</td></tr><tr><td>partner</td><td>186</td><td>45</td></tr><tr><td>web</td><td>186</td><td>59</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-missing_function">
+  <div class="chead">
+    <h2>Functions Druid does not have</h2>
+    <p>NOW, DATEADD, IF, ILIKE, MEDIAN and their replacements</p>
+    <span class="cn">5 examples</span>
+  </div>
+  
+  <article class="ex has-trap" id="mf_01">
+    <header>
+      <span class="eid">mf_01</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_fin_txn</code></span>
+    </header>
+    <p class="q">Decline rate per merchant category over the past week</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> merchantCategory,
+       <i class='k'>COUNT</i>(*) <i class='k'>FILTER</i> (<i class='k'>WHERE</i> authResult = <i class='s'>'declined'</i>) * 1.0 / <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"decline_rate"</i>
+<i class='k'>FROM</i> ds_fin_txn
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'7'</i> DAY
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>merchantCategory</th><th>decline_rate</th></tr></thead><tbody><tr><td>dining</td><td>0.28125</td></tr><tr><td>online</td><td>0.28125</td></tr><tr><td>grocery</td><td>0.21739130434782608</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> merchantCategory, <i class='k'>AVG</i>(<i class='f'>IF</i>(authResult = <i class='s'>'declined'</i>, 1, 0)) <i class='k'>AS</i> decline_rate <i class='k'>FROM</i> ds_fin_txn <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> No match found for function signature IF(&lt;BOOLEAN&gt;, &lt;NUMERIC&gt;, &lt;NUMERIC&gt;) (line [1], column [30])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="mf_02">
+    <header>
+      <span class="eid">mf_02</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Bucket events into fast, normal and slow by latency and count each bucket</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 3 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>CASE</i>
+         <i class='k'>WHEN</i> latency_ms &lt; 100 <i class='k'>THEN</i> <i class='s'>'fast'</i>
+         <i class='k'>WHEN</i> latency_ms &lt; 500 <i class='k'>THEN</i> <i class='s'>'normal'</i>
+         <i class='k'>ELSE</i> <i class='s'>'slow'</i>
+       <i class='k'>END</i> <i class='k'>AS</i> <i class='q'>"latency_bucket"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"event_count"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>latency_bucket</th><th>event_count</th></tr></thead><tbody><tr><td>fast</td><td>392</td></tr><tr><td>normal</td><td>199</td></tr><tr><td>slow</td><td>9</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="mf_03">
+    <header>
+      <span class="eid">mf_03</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Count events whose referrer host contains google, case-insensitively</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"event_count"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>WHERE</i> <i class='f'>LOWER</i>(referrer_host) LIKE <i class='s'>'%google%'</i></code></pre>
+        <div class='tw'><table><thead><tr><th>event_count</th></tr></thead><tbody><tr><td>94</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>COUNT</i>(*) <i class='k'>FROM</i> ds_web_events <i class='k'>WHERE</i> referrer_host ILIKE <i class='s'>'%google%'</i></code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> No match found for function signature ILIKE (line [1], column [42])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="mf_04">
+    <header>
+      <span class="eid">mf_04</span>
+      <span class="ds-list"><code class='ds'>ds_sec_alerts</code></span>
+    </header>
+    <p class="q">Alerts whose rule name starts with suspicious</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> rule_name,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"alert_count"</i>
+<i class='k'>FROM</i> ds_sec_alerts
+<i class='k'>WHERE</i> <i class='f'>REGEXP_LIKE</i>(rule_name, <i class='s'>'^suspicious'</i>)
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>rule_name</th><th>alert_count</th></tr></thead><tbody><tr><td>suspicious_powershell</td><td>107</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="mf_05">
+    <header>
+      <span class="eid">mf_05</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_game_sessions</code></span>
+    </header>
+    <p class="q">Sessions from 7 days ago onwards, per platform</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> platform,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"session_count"</i>
+<i class='k'>FROM</i> ds_game_sessions
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>TIMESTAMPADD</i>(DAY, -7, <i class='f'>CURRENT_TIMESTAMP</i>)
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>platform</th><th>session_count</th></tr></thead><tbody><tr><td>xbox</td><td>24</td></tr><tr><td>switch</td><td>21</td></tr><tr><td>mobile</td><td>18</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> platform, <i class='k'>COUNT</i>(*) <i class='k'>FROM</i> ds_game_sessions <i class='k'>WHERE</i> __time &gt;= <i class='f'>DATEADD</i>(day, -7, <i class='f'>GETDATE</i>()) <i class='k'>GROUP BY</i> 1</code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Received an unexpected token [day] (line [1], column [73]), acceptable options: ["DISTINCT", "ALL", &lt;IDENTIFIER&gt;, &lt;HYPHENATED_IDENTIFIER&gt;, &lt;QUOTED_IDENTIFIER&gt;, &lt;BACK_QUOTED_IDENTIFIER&gt;, &lt;BIG_QUERY_BACK_QUOTED_IDENTIFIER&gt;, &lt;BRACKET_QUOTED_IDENTIFIER&gt;, &lt;UNICODE_</p>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-time_shift">
+  <div class="chead">
+    <h2>Period comparison</h2>
+    <p>TIME_SHIFT and filtered aggregates</p>
+    <span class="cn">3 examples</span>
+  </div>
+  
+  <article class="ex" id="ts_01">
+    <header>
+      <span class="eid">ts_01</span>
+      <span class="ds-list"><code class='ds'>ds_web_events</code></span>
+    </header>
+    <p class="q">Compare revenue in the last 7 days against the 7 days before that</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='k'>SUM</i>(revenue_usd) <i class='k'>FILTER</i> (
+         <i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'7'</i> DAY
+       ) <i class='k'>AS</i> <i class='q'>"this_period"</i>,
+       <i class='k'>SUM</i>(revenue_usd) <i class='k'>FILTER</i> (
+         <i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'14'</i> DAY
+           <i class='k'>AND</i> __time &lt; <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'7'</i> DAY
+       ) <i class='k'>AS</i> <i class='q'>"prior_period"</i>
+<i class='k'>FROM</i> ds_web_events
+<i class='k'>WHERE</i> __time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'14'</i> DAY</code></pre>
+        <div class='tw'><table><thead><tr><th>this_period</th><th>prior_period</th></tr></thead><tbody><tr><td>6817.13</td><td>9665.570000000002</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="ts_02">
+    <header>
+      <span class="eid">ts_02</span>
+      <span class="ds-list"><code class='ds'>ds_ad_impressions</code></span>
+    </header>
+    <p class="q">Shift each impression timestamp back one week and bucket by day</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 31 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(<i class='f'>TIME_SHIFT</i>(__time, <i class='s'>'P1D'</i>, -7), <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"shifted_day"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"impressions"</i>
+<i class='k'>FROM</i> ds_ad_impressions
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>shifted_day</th><th>impressions</th></tr></thead><tbody><tr><td>2026-07-15T00:00:00.000Z</td><td>10</td></tr><tr><td>2026-07-16T00:00:00.000Z</td><td>17</td></tr><tr><td>2026-07-17T00:00:00.000Z</td><td>17</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="ts_03">
+    <header>
+      <span class="eid">ts_03</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Dropped-call rate for the same 3 hour window today and one week ago</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 1 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"day"</i>,
+       <i class='k'>SUM</i>(dropped_flag) * 1.0 / <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"drop_rate"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>WHERE</i> (__time &gt;= <i class='f'>CURRENT_TIMESTAMP</i> - <i class='k'>INTERVAL</i> <i class='s'>'3'</i> HOUR)
+   <i class='k'>OR</i> (__time &gt;= <i class='f'>TIME_SHIFT</i>(<i class='f'>CURRENT_TIMESTAMP</i>, <i class='s'>'P1D'</i>, -7) - <i class='k'>INTERVAL</i> <i class='s'>'3'</i> HOUR
+       <i class='k'>AND</i> __time &lt; <i class='f'>TIME_SHIFT</i>(<i class='f'>CURRENT_TIMESTAMP</i>, <i class='s'>'P1D'</i>, -7))
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>day</th><th>drop_rate</th></tr></thead><tbody><tr><td>2026-08-21T00:00:00.000Z</td><td>0.0</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="cluster" id="c-grouping">
+  <div class="chead">
+    <h2>Grouping idioms</h2>
+    <p>GROUPING SETS, HAVING, SAFE_DIVIDE, ordinals</p>
+    <span class="cn">4 examples</span>
+  </div>
+  
+  <article class="ex" id="mi_01">
+    <header>
+      <span class="eid">mi_01</span>
+      <span class="ds-list"><code class='ds'>ds_orders</code></span>
+    </header>
+    <p class="q">Order counts by channel and payment method, with subtotals</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 21 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> channel,
+       payment_method,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"order_count"</i>
+<i class='k'>FROM</i> ds_orders
+<i class='k'>GROUP BY</i> <i class='k'>GROUPING SETS</i> ((channel, payment_method), (channel), ())
+<i class='k'>ORDER BY</i> 1, 2</code></pre>
+        <div class='tw'><table><thead><tr><th>channel</th><th>payment_method</th><th>order_count</th></tr></thead><tbody><tr><td>None</td><td>None</td><td>500</td></tr><tr><td>android</td><td>None</td><td>130</td></tr><tr><td>android</td><td>card</td><td>34</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="mi_02">
+    <header>
+      <span class="eid">mi_02</span>
+      <span class="ds-list"><code class='ds'>ds_fin_txn</code></span>
+    </header>
+    <p class="q">Merchants with more than 20 approved transactions</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 0 rows (absolute date range)</span></h4>
+        <pre><code><i class='k'>SELECT</i> merchantId,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"approved_count"</i>
+<i class='k'>FROM</i> ds_fin_txn
+<i class='k'>WHERE</i> authResult = <i class='s'>'approved'</i>
+<i class='k'>GROUP BY</i> 1
+<i class='k'>HAVING</i> <i class='k'>COUNT</i>(*) &gt; 20
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        
+      </div>
+    </div>
+  </article>
+  <article class="ex has-trap" id="mi_04">
+    <header>
+      <span class="eid">mi_04</span><span class='tag hard'>hard trap</span>
+      <span class="ds-list"><code class='ds'>ds_fin_txn</code></span>
+    </header>
+    <p class="q">Transaction counts per merchant category, busiest first</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 5 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> merchantCategory <i class='k'>AS</i> <i class='q'>"category"</i>,
+       <i class='k'>COUNT</i>(*) <i class='k'>AS</i> <i class='q'>"txn_count"</i>
+<i class='k'>FROM</i> ds_fin_txn
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 2 <i class='k'>DESC</i></code></pre>
+        <div class='tw'><table><thead><tr><th>category</th><th>txn_count</th></tr></thead><tbody><tr><td>online</td><td>130</td></tr><tr><td>dining</td><td>125</td></tr><tr><td>grocery</td><td>123</td></tr></tbody></table></div>
+      </div>
+      <div class="pane naive">
+        <h4>The standard-SQL reflex <span class="never">never shown to the model</span></h4>
+        <pre><code><i class='k'>SELECT</i> merchantCategory <i class='k'>AS</i> category, <i class='k'>COUNT</i>(*) <i class='k'>AS</i> txn_count <i class='k'>FROM</i> ds_fin_txn <i class='k'>GROUP BY</i> category <i class='k'>ORDER BY</i> txn_count <i class='k'>DESC</i></code></pre>
+        <p class='verdict bad'><strong>Druid rejects it.</strong> Column 'category' not found in any table (line [1], column [85])</p>
+      </div>
+    </div>
+  </article>
+  <article class="ex" id="mi_03">
+    <header>
+      <span class="eid">mi_03</span>
+      <span class="ds-list"><code class='ds'>ds_telco_cdr</code></span>
+    </header>
+    <p class="q">Daily data volume in gigabytes, guarding against divide-by-zero</p>
+    <div class="panes">
+      <div class="pane good">
+        <h4>Completion <span class="ok">valid · 31 rows</span></h4>
+        <pre><code><i class='k'>SELECT</i> <i class='f'>TIME_FLOOR</i>(__time, <i class='s'>'P1D'</i>) <i class='k'>AS</i> <i class='q'>"day"</i>,
+       (<i class='k'>SUM</i>(bytes_up) + <i class='k'>SUM</i>(bytes_down)) / 1073741824.0 <i class='k'>AS</i> <i class='q'>"total_gb"</i>,
+       <i class='f'>SAFE_DIVIDE</i>(<i class='k'>SUM</i>(bytes_down), <i class='k'>SUM</i>(bytes_up)) <i class='k'>AS</i> <i class='q'>"down_up_ratio"</i>
+<i class='k'>FROM</i> ds_telco_cdr
+<i class='k'>GROUP BY</i> 1
+<i class='k'>ORDER BY</i> 1</code></pre>
+        <div class='tw'><table><thead><tr><th>day</th><th>total_gb</th><th>down_up_ratio</th></tr></thead><tbody><tr><td>2026-07-22T00:00:00.000Z</td><td>4.402739496901631</td><td>1</td></tr><tr><td>2026-07-23T00:00:00.000Z</td><td>3.629995240829885</td><td>1</td></tr><tr><td>2026-07-24T00:00:00.000Z</td><td>3.833529115654528</td><td>1</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </article>
+</section>
+</main>
+</div>
