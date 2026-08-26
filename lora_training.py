@@ -6,7 +6,7 @@ Important docs I used for this:
 - huggingface.co/docs/peft/en/developer_guides/quantization
 """
 from peft import LoraConfig, get_peft_model, TaskType
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback, TextStreamer
 from datasets import load_dataset
 from trl import SFTConfig, SFTTrainer
 import torch
@@ -40,8 +40,10 @@ class InferenceCallback(TrainerCallback):
                                     return_tensors="pt",
                                     return_dict=True
                                 ).to(DEVICE)
-                outputs = model.generate(**tokenized_chat , max_new_tokens=self.max_tokens)
-                print(self.tokenizer.decode(outputs[0], skip_special_tokens=True))
+
+                streamer = TextStreamer(tokenizer=self.tokenizer, skip_prompt=False, skip_special_tokens=True)
+                outputs = model.generate(**tokenized_chat , max_new_tokens=self.max_tokens, streamer=streamer)
+
         print("\n------------------ End Inference ------------------\n")
 
         model.config.use_cache = was_caching
@@ -51,7 +53,9 @@ class InferenceCallback(TrainerCallback):
 if __name__ == "__main__":
 
     # load the dataset
-    dataset = load_dataset("json", data_files="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/batch01.sft.jsonl", split="train")
+    train_dataset = load_dataset("json", data_files="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/train.jsonl", split="train")
+    eval_dataset = load_dataset("json", data_files="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/val.jsonl", split="train")
+    
     # Load base model
     model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-2B", dtype=torch.bfloat16)
 
@@ -78,20 +82,30 @@ if __name__ == "__main__":
         learning_rate=2.0e-4,
         assistant_only_loss=True,
         per_device_train_batch_size=2,
+        gradient_accumulation_steps=1,
         num_train_epochs=3,
         max_length=2048,
         logging_steps=10,
+        eval_strategy="steps",
+        eval_steps=50,
+        save_strategy="steps",
+        save_steps=50,
+        save_total_limit=3,
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        seed=64,
         output_dir="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora",
         lr_scheduler_type="cosine",
-        warmup_steps=2,
+        warmup_steps=8,
         # warmup_ratio=0.03
     )
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        train_dataset=dataset,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
         processing_class=tokenizer,
-        callbacks=[InferenceCallback(tokenizer=tokenizer, test_messages=[dataset[0], dataset[2]], n_steps=10)]
+        callbacks=[InferenceCallback(tokenizer=tokenizer, test_messages=[train_dataset[0], train_dataset[2]], n_steps=100)]
     )
 
     trainer.train()

@@ -1,10 +1,11 @@
 from peft import LoraConfig, get_peft_model, TaskType, PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
 import json
 import sys
 import torch
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+stream = True
 
 model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-2B")
 peft_model = PeftModel.from_pretrained(model, "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_smoke_test/")
@@ -46,5 +47,12 @@ if __name__ == "__main__":
             return_dict=True
             ).to(device)
         model.to(device)
-        outputs = model.generate(**tokenized_chat , max_new_tokens=200)
-        print(tokenizer.decode(outputs[0], skip_special_tokens=True))
+
+        if stream:
+            # streaming approach
+            streamer = TextStreamer(tokenizer=tokenizer, skip_prompt=False, skip_special_tokens=True)
+            outputs = model.generate(**tokenized_chat , max_new_tokens=200, streamer=streamer)
+        else:
+            # direct approach
+            outputs = model.generate(**tokenized_chat , max_new_tokens=200)
+            print(tokenizer.decode(outputs[0], skip_special_tokens=True))
