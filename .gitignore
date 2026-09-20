@@ -229,6 +229,8 @@ druid-harness/docker/apache-druid-*-bin.tar.gz
 
 # Temp files
 test.txt
+del_leg_wh_prompt.txt
+del_leg_wh_prompt_md_format.md
 
 # Model files
 models/

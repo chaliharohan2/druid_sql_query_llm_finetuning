@@ -12,6 +12,7 @@ from trl import SFTConfig, SFTTrainer
 import torch
 
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+OUTPUT_DIR = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora"
 
 class InferenceCallback(TrainerCallback):
     def __init__(self, tokenizer: AutoTokenizer, test_messages, n_steps, max_tokens=2048):
@@ -94,7 +95,7 @@ if __name__ == "__main__":
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         seed=64,
-        output_dir="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora",
+        output_dir=OUTPUT_DIR,
         lr_scheduler_type="cosine",
         warmup_steps=8,
         # warmup_ratio=0.03

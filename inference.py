@@ -6,37 +6,63 @@ import torch
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 stream = True
+use_custom_question = False
 
 model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-2B")
-peft_model = PeftModel.from_pretrained(model, "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_smoke_test/")
+peft_model = PeftModel.from_pretrained(model, "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora/checkpoint-1500")
 model = peft_model.merge_and_unload()
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3.5-2B")
-
-dataset = []
-
-try:
-    with open("/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/batch01.sft.jsonl", mode="r") as f:
-        for line in f:
-            data_entry = json.loads(s=line)
-            dataset.append(data_entry)
-except Exception as e:
-    print(str(e))
 
 if __name__ == "__main__":
 
     while True:
-        user_input = input("Index to check: ").strip()
-        if user_input == "q":
-            print("Exiting....")
-            sys.exit(0)
-        elif not user_input:
-            continue
-        else:
-            idx = int(user_input) 
 
-        messages: list = list(dataset[idx]["messages"])
-        # print(messages)
-        messages.pop(-1)
+        if not use_custom_question:
+            dataset = []
+            try:
+                with open("/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/val.jsonl", mode="r") as f:
+                    for line in f:
+                        data_entry = json.loads(s=line)
+                        dataset.append(data_entry)
+            except Exception as e:
+                print(str(e))
+
+            user_input = input("Index to check: ").strip()
+            if user_input == "q":
+                print("Exiting....")
+                sys.exit(0)
+            elif not user_input:
+                continue
+            else:
+                idx = int(user_input)
+
+            messages: list = list(dataset[idx]["messages"])
+            # print(messages)
+            messages.pop(-1)
+
+        else:
+
+            with open("/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/del_leg_wh_prompt_md_format.md", mode="r") as file:
+                sys_prompt = file.read()
+
+            user_input = input("> ").strip()
+            if user_input == "q":
+                print("Exiting....")
+                sys.exit(0)
+            elif not user_input:
+                continue
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": sys_prompt
+                },
+                {
+                    "role": "user",
+                    "content": user_input
+                }
+            ]
+        
 
         tokenized_chat = tokenizer.apply_chat_template(
             messages, 
@@ -51,8 +77,8 @@ if __name__ == "__main__":
         if stream:
             # streaming approach
             streamer = TextStreamer(tokenizer=tokenizer, skip_prompt=False, skip_special_tokens=True)
-            outputs = model.generate(**tokenized_chat , max_new_tokens=200, streamer=streamer)
+            outputs = model.generate(**tokenized_chat , max_new_tokens=2048, streamer=streamer)
         else:
             # direct approach
-            outputs = model.generate(**tokenized_chat , max_new_tokens=200)
+            outputs = model.generate(**tokenized_chat , max_new_tokens=2048)
             print(tokenizer.decode(outputs[0], skip_special_tokens=True))
