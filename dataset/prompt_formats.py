@@ -53,7 +53,8 @@ _order_rng: random.Random | None = None
 
 
 def cols(d: dict) -> list[Col]:
-    out = [Col(n, t, s, n == d["time_col"]) for n, t, s in d["columns"]]
+    blank = set(d.get("blank_desc_columns") or ())
+    out = [Col(n, t, "" if n in blank else s, n == d["time_col"]) for n, t, s in d["columns"]]
     if _order_rng is not None:
         # Real catalogues do not list the timestamp first and the rest in ingest
         # order. Shuffle so neither position teaches the model anything.
@@ -69,6 +70,59 @@ def tables(index: dict, schema_ids: list[str]):
         yield d, cols(d)
 
 
+def raw_cols(d: dict) -> list[Col]:
+    """Columns with no blank-description overlay and no reordering.
+
+    Used only by `f_md_sections`: `prompt.py`'s `schema_block()` (the actual
+    serving-time renderer) reads `d["columns"]` directly with neither effect,
+    and this format must stay byte-identical to it (see module docstring).
+    """
+    return [Col(n, t, s, n == d["time_col"]) for n, t, s in d["columns"]]
+
+
+def raw_tables(index: dict, schema_ids: list[str]):
+    for sid in schema_ids:
+        d = index[sid]
+        yield d, raw_cols(d)
+
+
+def notes_block(d: dict, overview: bool = True, rules: bool = True) -> str:
+    """Overview prose (P0-5) and/or instructions + glossary (P0-7) for one datasource."""
+    parts = []
+    if overview and d.get("overview"):
+        parts.append(d["overview"])
+    if rules:
+        for instr in d.get("instructions") or []:
+            parts.append(f"- {instr['text']}")
+        for g in d.get("glossary") or []:
+            parts.append(f"- {g['definition_text']}")
+    return "\n".join(parts)
+
+
+# Per-render context, set by `render()`: a notes_v3.NotesStyle (varied rule wording, layouts and glossary
+# patterns, addendum F1/F2) and a {table id: nullable column names} display override (addendum F5).
+# With neither set the output is exactly what v2 shipped, which the tests pin.
+_notes_style = None
+_nullable_override = None
+
+
+def notes_text(d: dict, notes_for, overview_for) -> str:
+    """What to print for one table: rules only for tables in `notes_for`; the overview
+    for tables in `notes_for` or `overview_for`. Nothing for tables in neither."""
+    sid = d.get("id")
+    overview = (sid in (notes_for or ())) or (sid in (overview_for or ()))
+    rules = sid in (notes_for or ())
+    if _notes_style is not None:
+        return _notes_style.text(d, overview, rules)
+    return notes_block(d, overview=overview, rules=rules)
+
+
+def nullable_columns(d: dict) -> set:
+    if _nullable_override is not None and d.get("id") in _nullable_override:
+        return set(_nullable_override[d["id"]])
+    return set(d.get("nullable_columns") or ())
+
+
 def _lookup_lines(d: dict, style: str = "prose") -> list[str]:
     out = []
     for lname, lcol, ldesc in d.get("lookups") or []:
@@ -82,10 +136,14 @@ def _lookup_lines(d: dict, style: str = "prose") -> list[str]:
 
 
 # ------------------------------------------------------------------ formats
-def f_md_sections(index, ids, q):
-    """F01 - the original. Markdown headings, backticked names, full descriptions."""
+def f_md_sections(index, ids, q, notes_for=None, overview_for=None):
+    """F01 - the original. Markdown headings, backticked names, full descriptions.
+
+    Must stay byte-identical to `prompt.py`'s `schema_block()`: uses
+    `raw_tables()`, not `tables()`, and ignores `notes_for` (kept as a
+    parameter only so `render()`'s uniform call signature still works)."""
     p = ["# Database Schema"]
-    for d, cs in tables(index, ids):
+    for d, cs in raw_tables(index, ids):
         p.append(f"\n## Table: `{d['datasource']}`")
         p.append("### Columns:")
         for c in cs:
@@ -98,10 +156,13 @@ def f_md_sections(index, ids, q):
     return [("system", sys), ("user", q)]
 
 
-def f_ddl(index, ids, q):
+def f_ddl(index, ids, q, notes_for=None, overview_for=None):
     """F02 - CREATE TABLE DDL with trailing line comments."""
     p = []
     for d, cs in tables(index, ids):
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append("-- " + nb.replace("\n", "\n-- "))
         p.append(f"CREATE TABLE {d['datasource']} (")
         w = max(len(c.name) for c in cs)
         for i, c in enumerate(cs):
@@ -116,11 +177,14 @@ def f_ddl(index, ids, q):
     return [("system", sys), ("user", q)]
 
 
-def f_compact(index, ids, q):
+def f_compact(index, ids, q, notes_for=None, overview_for=None):
     """F03 - one line per table, types only, no descriptions."""
     p = []
     for d, cs in tables(index, ids):
         sig = ", ".join(f"{c.name}:{c.sql}" for c in cs)
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append("-- " + nb.replace("\n", "\n-- "))
         p.append(f"{d['datasource']}({sig})")
         for lname, lcol, _ in d.get("lookups") or []:
             p.append(f"lookup {lname} on {lcol}")
@@ -128,12 +192,16 @@ def f_compact(index, ids, q):
             ("user", q)]
 
 
-def f_yaml(index, ids, q):
+def f_yaml(index, ids, q, notes_for=None, overview_for=None):
     """F04 - YAML."""
     p = ["dialect: apache-druid", "tables:"]
     for d, cs in tables(index, ids):
         p.append(f"  - name: {d['datasource']}")
         p.append(f"    domain: {d['domain']}")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append("    notes: |")
+            p.extend("      " + line for line in nb.split("\n"))
         p.append("    columns:")
         for c in cs:
             p.append(f"      - name: {c.name}")
@@ -149,12 +217,15 @@ def f_yaml(index, ids, q):
     return [("system", sys), ("user", q)]
 
 
-def f_json(index, ids, q):
+def f_json(index, ids, q, notes_for=None, overview_for=None):
     """F05 - JSON blob, the shape a programmatic caller would inject."""
     obj = {"dialect": "druid", "tables": []}
     for d, cs in tables(index, ids):
         t = {"table": d["datasource"],
              "columns": [{"name": c.name, "type": c.sql, "description": c.desc} for c in cs]}
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            t["notes"] = nb
         if d.get("lookups"):
             t["lookups"] = [{"name": a, "key": b, "description": c} for a, b, c in d["lookups"]]
         obj["tables"].append(t)
@@ -162,11 +233,14 @@ def f_json(index, ids, q):
     return [("system", sys), ("user", json.dumps(obj, indent=2) + f"\n\n{q}")]
 
 
-def f_pipe_table(index, ids, q):
+def f_pipe_table(index, ids, q, notes_for=None, overview_for=None):
     """F06 - markdown pipe table, the shape a wiki page or dbt doc gets pasted in as."""
     p = []
     for d, cs in tables(index, ids):
         p.append(f"**{d['datasource']}** ({d['domain']}, {d['rows']} rows)\n")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append(nb + "\n")
         p.append("| Column | Type | Notes |")
         p.append("| --- | --- | --- |")
         for c in cs:
@@ -178,11 +252,14 @@ def f_pipe_table(index, ids, q):
     return [("system", sys), ("user", "\n".join(p).rstrip() + f"\n\n{q}")]
 
 
-def f_no_system(index, ids, q):
+def f_no_system(index, ids, q, notes_for=None, overview_for=None):
     """F07 - two turns. Everything in the user message, schema before question."""
     p = []
     for d, cs in tables(index, ids):
         p.append(f"Table {d['datasource']}:")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append("Notes: " + nb.replace("\n", "\n  "))
         for c in cs:
             p.append(f"  - {c.name} ({c.sql}) - {c.short()}")
         for lname, lcol, ldesc in d.get("lookups") or []:
@@ -192,11 +269,14 @@ def f_no_system(index, ids, q):
     return [("user", f"{body}\n\nWrite a Druid SQL query: {q}")]
 
 
-def f_question_first(index, ids, q):
+def f_question_first(index, ids, q, notes_for=None, overview_for=None):
     """F08 - question ahead of the schema, so position is not a cue."""
     p = []
     for d, cs in tables(index, ids):
         p.append(f"{d['datasource']}")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append("  -- " + nb.replace("\n", "\n  -- "))
         for c in cs:
             p.append(f"  {c.name} {c.sql}   {c.short()}")
         for lname, lcol, _ in d.get("lookups") or []:
@@ -207,11 +287,14 @@ def f_question_first(index, ids, q):
             ("user", f"{q}\n\nSchema:\n{chr(10).join(p).rstrip()}")]
 
 
-def f_verbose_rules(index, ids, q):
+def f_verbose_rules(index, ids, q, notes_for=None, overview_for=None):
     """F09 - the heavily prompt-engineered system message a careful team ships."""
     p = ["## Available tables"]
     for d, cs in tables(index, ids):
         p.append(f"\n### {d['datasource']} - {d['domain']}")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append(nb)
         for c in cs:
             tag = ""
             if c.is_mvd:
@@ -252,11 +335,14 @@ def _fmt_time(v):
     return _dt.datetime.utcfromtimestamp(ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def f_sample_rows(index, ids, q, seeds=None):
+def f_sample_rows(index, ids, q, seeds=None, notes_for=None, overview_for=None):
     """F11 - schema plus a couple of real rows, the Spider/BIRD convention."""
     p = []
     for d, cs in tables(index, ids):
         p.append(f"Table: {d['datasource']}")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append("Notes: " + nb.replace("\n", "\n  "))
         p.append("Columns: " + ", ".join(f"{c.name} {c.sql}" for c in cs))
         rows = (seeds or {}).get(d["datasource"], [])[:2]
         if rows:
@@ -279,11 +365,65 @@ def f_sample_rows(index, ids, q, seeds=None):
     return [("system", sys), ("user", "\n".join(p).rstrip() + f"\n\nQuestion: {q}")]
 
 
-def f_druid_native(index, ids, q):
+def f_enterprise_pipe(index, ids, q, notes_for=None, overview_for=None):
+    """F13 - enterprise datasource doc export: heading, overview/instructions
+    prose, then a COLUMN_NAME | DATA_TYPE | IS_NULLABLE | DESCRIPTION table
+    (plan P0-5 format (a)). Structurally close to the DCE production prompt."""
+    p = []
+    for d, cs in tables(index, ids):
+        nullable = nullable_columns(d)
+        p.append(f"# Datasource: {d['datasource']}")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append(nb)
+        p.append("")
+        p.append("| COLUMN_NAME | DATA_TYPE | IS_NULLABLE | DESCRIPTION |")
+        p.append("| --- | --- | --- | --- |")
+        for c in cs:
+            base_name = c.name if c.name != "__time" else d["time_col"]
+            is_null = "YES" if base_name in nullable else "NO"
+            p.append(f"| {c.name} | {c.sql} | {is_null} | {c.desc} |")
+        for lname, lcol, ldesc in d.get("lookups") or []:
+            p.append(f"| LOOKUP({lcol}, '{lname}') | VARCHAR | NO | {ldesc} |")
+        p.append("")
+    sys = ("You write Apache Druid SQL against the datasource(s) below. Return only the "
+          "query, no prose, no markdown fences.\n\n" + "\n".join(p).rstrip())
+    return [("system", sys), ("user", q)]
+
+
+def f_enterprise_backtick(index, ids, q, notes_for=None, overview_for=None):
+    """F14 - same enterprise structure as F13, but columns as a backtick list
+    with inline nullability instead of a pipe table (plan P0-5 format (b))."""
+    p = []
+    for d, cs in tables(index, ids):
+        nullable = nullable_columns(d)
+        p.append(f"## Table: `{d['datasource']}`")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append(nb)
+        p.append("### Columns:")
+        for c in cs:
+            base_name = c.name if c.name != "__time" else d["time_col"]
+            null_txt = "NULLABLE" if base_name in nullable else "NOT NULL"
+            p.append(f"`{c.name}` ({c.sql}, {null_txt}): {c.desc}")
+        lk = _lookup_lines(d)
+        if lk:
+            p.append("### Lookups:")
+            p.extend(lk)
+        p.append("")
+    sys = ("You are a Druid SQL assistant. Answer with exactly one Apache Druid 35.0.0 "
+          "query and nothing else.\n\n# Database Schema\n\n" + "\n".join(p).rstrip())
+    return [("system", sys), ("user", q)]
+
+
+def f_druid_native(index, ids, q, notes_for=None, overview_for=None):
     """F12 - Druid's own type vocabulary, the shape the web console shows."""
     p = []
     for d, cs in tables(index, ids):
         p.append(f"datasource: {d['datasource']}")
+        nb = notes_text(d, notes_for, overview_for)
+        if nb:
+            p.append("# " + nb.replace("\n", "\n# "))
         for c in cs:
             t = c.druid
             if c.is_mvd:
@@ -306,21 +446,36 @@ def f_druid_native(index, ids, q):
 #   json_keys - the key names inside a JSON-as-string column
 #   mvd       - marks a multi-value dimension as multi-value
 ALL = frozenset({"desc", "lookup", "json_keys", "mvd"})
+# Formats whose renderer accepts `notes_for` (table overview/instructions/
+# glossary prose, plan P0-7). The sampler only routes instruction-bearing
+# examples to one of these. `md_sections` is deliberately excluded even
+# though its renderer accepts the parameter: prompt.py's `schema_block()` is
+# the actual serving-time renderer and has no notes support, and its
+# docstring requires this format to stay byte-identical to that. Adding
+# notes here would train the model on a system-prompt shape production
+# never sends.
+NOTES_CAPABLE = frozenset({"ddl", "pipe_table", "verbose_rules", "enterprise_pipe", "enterprise_backtick",
+                          "yaml", "json", "compact", "no_system", "question_first", "sample_rows",
+                          "druid_native"})
 
+# Weights are close to equal (Section 7: "roughly balanced", no-system ~8%). md_sections is
+# a little heavier because it is the format `prompt.py` serves.
 FORMATS = {
-    "md_sections":   (22, f_md_sections, ALL),
-    "ddl":           (12, f_ddl, ALL),
-    "compact":        (7, f_compact, frozenset({"lookup"})),
-    "yaml":           (8, f_yaml, ALL),
-    "json":           (7, f_json, ALL),
-    "pipe_table":     (9, f_pipe_table, ALL),
-    "no_system":      (8, f_no_system, ALL),
-    "question_first": (6, f_question_first, ALL),
-    "verbose_rules": (10, f_verbose_rules, ALL),
-    "bare":           (4, f_bare, frozenset()),
+    "md_sections":   (16, f_md_sections, ALL),
+    "ddl":           (7, f_ddl, ALL),
+    "compact":       (6, f_compact, frozenset({"lookup"})),
+    "yaml":          (7, f_yaml, ALL),
+    "json":          (7, f_json, ALL),
+    "pipe_table":    (7, f_pipe_table, ALL),
+    "no_system":     (8, f_no_system, ALL),
+    "question_first": (7, f_question_first, ALL),
+    "verbose_rules": (7, f_verbose_rules, ALL),
+    "bare":          (8, f_bare, frozenset()),
     # sample rows show the MVD contents and the JSON keys as literal data
-    "sample_rows":    (7, f_sample_rows, frozenset({"lookup", "json_keys", "mvd"})),
-    "druid_native":   (6, f_druid_native, frozenset({"lookup", "mvd"})),
+    "sample_rows":   (7, f_sample_rows, frozenset({"lookup", "json_keys", "mvd"})),
+    "druid_native":  (6, f_druid_native, frozenset({"lookup", "mvd"})),
+    "enterprise_pipe":     (8, f_enterprise_pipe, ALL),
+    "enterprise_backtick": (8, f_enterprise_backtick, ALL),
 }
 
 
@@ -340,21 +495,30 @@ def requirements(index: dict, schema_ids: list[str], sql: str) -> frozenset:
     return frozenset(need)
 
 
-def render(fmt: str, index, ids, q, seeds=None, order_seed=None):
-    global _order_rng
+def render(fmt: str, index, ids, q, seeds=None, order_seed=None, notes_for=None, overview_for=None,
+           notes_style=None, nullable_override=None):
+    global _order_rng, _notes_style, _nullable_override
     _order_rng = random.Random(order_seed) if order_seed is not None else None
+    _notes_style, _nullable_override = notes_style, nullable_override
     fn = FORMATS[fmt][1]
     try:
         if fmt == "sample_rows":
-            return fn(index, ids, q, seeds=seeds)
+            return fn(index, ids, q, seeds=seeds, notes_for=notes_for, overview_for=overview_for)
+        if fmt in NOTES_CAPABLE:
+            return fn(index, ids, q, notes_for=notes_for, overview_for=overview_for)
         return fn(index, ids, q)
     finally:
-        _order_rng = None
+        _order_rng = _notes_style = _nullable_override = None
 
 
-def pick(rng: random.Random, need: frozenset = frozenset()) -> str:
-    names = [n for n in FORMATS if need <= FORMATS[n][2]]
-    return rng.choices(names, weights=[FORMATS[n][0] for n in names])[0]
+def pick(rng: random.Random, need: frozenset = frozenset(), require_notes: bool = False,
+         multipliers: dict | None = None) -> str:
+    names = [n for n in FORMATS if need <= FORMATS[n][2]
+            and (not require_notes or n in NOTES_CAPABLE)]
+    if not names:
+        names = [n for n in FORMATS if need <= FORMATS[n][2]]
+    m = multipliers or {}
+    return rng.choices(names, weights=[FORMATS[n][0] * m.get(n, 1.0) for n in names])[0]
 
 
 def load_seeds() -> dict:

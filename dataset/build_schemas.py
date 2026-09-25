@@ -22,7 +22,8 @@ SPECS, SEEDS = ROOT / "specs", ROOT / "seeds"
 # into Druid no longer matches the queries validated against it.
 _META = json.loads((ROOT / "dataset_meta.json").read_text())
 NOW = datetime.fromisoformat(_META["anchor"])
-SPAN_DAYS = 30
+SPAN_DAYS = int(_META.get("span_days", 30))
+FACT_ROWS = 2400  # rows per fact datasource (plan Section 5 step 2: several rows per group)
 
 # Druid SQL type shown in the schema block, per loader type.
 SQL_TYPE = {"long": "BIGINT", "double": "DOUBLE", "float": "FLOAT",
@@ -30,8 +31,26 @@ SQL_TYPE = {"long": "BIGINT", "double": "DOUBLE", "float": "FLOAT",
 
 
 def ts_millis(rng: random.Random) -> int:
-    delta = timedelta(seconds=rng.uniform(0, SPAN_DAYS * 86400))
-    return int(((NOW - timedelta(days=SPAN_DAYS)) + delta).timestamp() * 1000)
+    """Timestamp in [NOW - SPAN_DAYS, NOW], denser toward the present.
+
+    6% of rows land in the last 36h and 34% in the last 45 days, the rest are
+    uniform over the whole span. Uniform alone would leave "today" and
+    "yesterday" nearly empty on an 18-month span; the plan (D6) needs windows
+    of every size to return rows.
+    """
+    r = rng.random()
+    if r < 0.06:
+        back = rng.uniform(0, 36 * 3600)
+    elif r < 0.40:
+        back = rng.uniform(0, 45 * 86400)
+    else:
+        back = rng.uniform(0, SPAN_DAYS * 86400)
+    return int((NOW - timedelta(seconds=back)).timestamp() * 1000)
+
+
+def _mvd(rng: random.Random, pool: list) -> list:
+    """1-3 tags, but ~8% of rows hold an empty array (real MVD columns do, and MV_LENGTH / MV_CONTAINS must cope)."""
+    return [] if rng.random() < 0.08 else rng.sample(pool, rng.randint(1, 3))
 
 
 def pick(rng, seq):
@@ -346,11 +365,11 @@ def build_row(sid: str, cols, rng: random.Random, tcol: str) -> dict:
         elif name in POOLS:
             row[name] = pick(rng, POOLS[name])
         elif name == "experiment_tags":
-            row[name] = rng.sample(EXPERIMENT_TAGS, rng.randint(1, 3))
+            row[name] = _mvd(rng, EXPERIMENT_TAGS)
         elif name == "creative_tags":
-            row[name] = rng.sample(CREATIVE_TAGS, rng.randint(1, 3))
+            row[name] = _mvd(rng, CREATIVE_TAGS)
         elif name == "alert_tags":
-            row[name] = rng.sample(ALERT_TAGS, rng.randint(1, 3))
+            row[name] = _mvd(rng, ALERT_TAGS)
         elif name == "attrs_json":
             row[name] = json.dumps({"campaign": pick(rng, ["spring", "holiday", "evergreen", "none"]),
                                     "tier": pick(rng, ["free", "plus", "pro"]),
@@ -477,6 +496,9 @@ def main() -> None:
     SPECS.mkdir(parents=True, exist_ok=True)
     SEEDS.mkdir(parents=True, exist_ok=True)
     index = {}
+    for d in SCHEMAS:
+        if d["id"] != "products":  # the one hand-written dimension table keeps its own size
+            d["rows"] = FACT_ROWS
     for d in SCHEMAS:
         rng = random.Random(zlib.crc32(d["id"].encode()))
         rows = [build_row(d["id"], d["columns"], rng, d["time_col"]) for _ in range(d["rows"])]

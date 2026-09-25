@@ -96,13 +96,14 @@ def tb_sum_filtered(s):
     g, gp, gn = s.grain()
     w, wp, _ = s.wide_window()  # an equality filter on a 24h window can match nothing
     d, m = s.dim(), s.met()
-    return Q(pick(s, f"Total {m} {gp} for {d} = {s.lit(d)} over {wp}",
-                  f"Break {m} down {gp} where {d} is {s.lit(d)}, {wp}"),
+    lit = s.lit(d)
+    return Q(pick(s, f"Total {m} {gp} for {d} = {lit} over {wp}",
+                  f"Break {m} down {gp} where {d} is {lit}, {wp}"),
              f"""
 SELECT TIME_FLOOR(__time, '{g}') AS "{gn}",
        SUM({m}) AS "total_{m}"
 FROM {s.ds}
-WHERE {d} = {s.lit(d)}
+WHERE {d} = {lit}
   AND __time >= CURRENT_TIMESTAMP - INTERVAL {w}
 GROUP BY 1
 ORDER BY 1
@@ -560,18 +561,19 @@ LIMIT 10
 @tpl("order_by_restriction", ["dims", "metrics"])
 def ob_scan_filtered(s):
     d, m = s.dim(), s.met()
-    return Q(pick(s, f"Latest 15 {s.noun()} where {d} is {s.lit(d)}",
-                  f"Most recent fifteen rows with {d} = {s.lit(d)}"),
+    lit = s.lit(d)
+    return Q(pick(s, f"Latest 15 {s.noun()} where {d} is {lit}",
+                  f"Most recent fifteen rows with {d} = {lit}"),
              f"""
 SELECT __time AS "event_time",
        {d} AS "{d}",
        {m} AS "{m}"
 FROM {s.ds}
-WHERE {d} = {s.lit(d)}
+WHERE {d} = {lit}
 ORDER BY __time DESC
 LIMIT 15
 """, must=["ORDER BY __time DESC"],
-             trap=INVALID(f"SELECT __time, {d}, {m} FROM {s.ds} WHERE {d} = {s.lit(d)} "
+             trap=INVALID(f"SELECT __time, {d}, {m} FROM {s.ds} WHERE {d} = {lit} "
                           f"ORDER BY {d}, __time DESC LIMIT 15"))
 
 
@@ -1136,13 +1138,14 @@ def jn_filter_partner(s):
     p, local, remote = s.partner()
     pd = p.dim_nonkey()
     m = s.met()
-    return Q(pick(s, f"Average {m} for rows whose {p.ds} {pd} is {p.lit(pd)}",
-                  f"Restrict to {pd} = {p.lit(pd)} in {p.ds} and average {m}"),
+    lit = p.lit(pd)
+    return Q(pick(s, f"Average {m} for rows whose {p.ds} {pd} is {lit}",
+                  f"Restrict to {pd} = {lit} in {p.ds} and average {m}"),
              f"""
 SELECT AVG(f.{m}) AS "avg_{m}"
 FROM {s.ds} AS f
 INNER JOIN {p.ds} AS p ON f.{local} = p.{remote}
-WHERE p.{pd} = {p.lit(pd)}
+WHERE p.{pd} = {lit}
 """, must=["JOIN"])
 
 
@@ -1185,7 +1188,7 @@ def mf_ilike(s):
     d = s.dim()
     pre = s.prefix(d)
     return Q(pick(s, f"Count {s.noun()} whose {d} starts with {pre.strip(chr(39)).rstrip('%')}, case-insensitively",
-                  f"Case-insensitive prefix match on {d}"),
+                  f"Case-insensitive prefix match on {d} for {pre.strip(chr(39)).rstrip('%')}"),
              f"""
 SELECT COUNT(*) AS "record_count"
 FROM {s.ds}
@@ -1389,7 +1392,7 @@ def gr_case_bucket(s):
     d = s.dim()
     v1, v2 = s.lit(d), s.lit(d)
     return Q(pick(s, f"Group {s.noun()} into {v1}, {v2} and other by {d}",
-                  f"Bucket {d} into three groups and count each"),
+                  f"Bucket {d} into {v1}, {v2} and everything else, and count each"),
              f"""
 SELECT CASE WHEN {d} = {v1} THEN 'group_one'
             WHEN {d} = {v2} THEN 'group_two'
@@ -1501,7 +1504,7 @@ def fa_two_filters(s):
     a, b = s.dims(2)
     va, vb = s.lit(a), s.lit(b)
     return Q(pick(s, f"Counts for {a} = {va} and for {b} = {vb} side by side",
-                  f"Two filtered counts in a single row"),
+                  f"Two filtered counts in a single row: {a} = {va} and {b} = {vb}"),
              f"""
 SELECT COUNT(*) FILTER (WHERE {a} = {va}) AS "count_a",
        COUNT(*) FILTER (WHERE {b} = {vb}) AS "count_b",

@@ -478,3 +478,21 @@ DIMS: list[dict] = [
                   ("checkout_lanes", "long", "Checkout lanes installed.", ("uni", 3, 42))],
          rows=7, exhaustive=True),
 ]
+
+
+# ---------------------------------------------------------------- v2 additions
+# 24 further invented domains drafted by make_families_v2.py (plan Section 5.1:
+# >=40 train + >=10 held-out domains). The JSON file is the committed output.
+def _load_v2() -> None:
+    import json
+    from pathlib import Path
+    path = Path(__file__).resolve().parent / "families_v2.json"
+    if not path.exists():
+        return
+    for f in json.loads(path.read_text()):
+        for k in ("mvd", "jsn", "lookup", "partner"):
+            f.setdefault(k, None)
+        FAMILIES.append(f)
+
+
+_load_v2()

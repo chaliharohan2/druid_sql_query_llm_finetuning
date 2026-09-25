@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Load every dataset spec into the running Druid cluster and register lookups."""
 from __future__ import annotations
-import json, sys, time
+import hashlib, json, sys, time
 from pathlib import Path
 from harness.client import DruidClient
 from harness.loader.ingest import load_datasource, datasource_exists
@@ -36,19 +36,36 @@ def register_lookups(c: DruidClient) -> None:
     print(f"lookups registered: {sorted(LOOKUPS)} (Broker propagation takes 2-4 min)")
 
 
+STATE = ROOT / ".load_state.json"
+
+
+def _fingerprint(spec: Path) -> str:
+    """Changes whenever the spec or its seed file changes, so a resumed run reloads only what is stale."""
+    seed = (spec.parent / json.loads(spec.read_text())["seed"]["path"]).resolve()
+    h = hashlib.sha1(spec.read_bytes())
+    h.update(str(seed.stat().st_size).encode())
+    h.update(hashlib.sha1(seed.read_bytes()).digest())
+    return h.hexdigest()
+
+
 def main() -> int:
     c = DruidClient()
     if not c.health():
         print("Druid is not up. Run `make up` in druid-harness/.", file=sys.stderr)
         return 1
     register_lookups(c)
+    done = json.loads(STATE.read_text()) if STATE.exists() else {}
     for spec in sorted(ROOT.glob("specs/*.json")):
         name = json.loads(spec.read_text())["name"]
-        if datasource_exists(c, name):
-            print(f"  {name:22} already loaded, replacing")
+        fp = _fingerprint(spec)
+        if done.get(name) == fp and datasource_exists(c, name):
+            print(f"  {name:22} up to date, skipped")
+            continue
         t0 = time.time()
         res = load_datasource(c, spec, replace=True)
-        print(f"  {name:22} {res['row_count']:5d} rows  {time.time()-t0:5.1f}s")
+        done[name] = fp
+        STATE.write_text(json.dumps(done))  # row_count here can lag the publish; verify_load.py checks the real count
+        print(f"  {name:22} loaded  {time.time()-t0:5.1f}s", flush=True)
     c.session.close()
     return 0
 

@@ -17,6 +17,7 @@ class ColumnSpec:
     name: str
     type: str
     is_time: bool = False
+    nullable: bool = False
 
 
 @dataclass(frozen=True)
@@ -82,7 +83,8 @@ def _parse_column(raw: Any, index: int) -> ColumnSpec:
             f"columns[{index}].type must be one of {sorted(ALLOWED_TYPES)}, got {col_type!r}"
         )
     is_time = bool(raw.get("is_time", False))
-    return ColumnSpec(name=name.strip(), type=col_type.lower(), is_time=is_time)
+    nullable = bool(raw.get("nullable", False))
+    return ColumnSpec(name=name.strip(), type=col_type.lower(), is_time=is_time, nullable=nullable)
 
 
 def _parse_seed(raw: dict[str, Any], spec_path: Path | None) -> SeedSpec:

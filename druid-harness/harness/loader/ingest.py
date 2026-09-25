@@ -212,6 +212,9 @@ def _coerce_row(row: dict[str, Any], spec: DatasourceSpec, origin: str) -> dict[
     coerced: dict[str, Any] = {}
     for column in spec.columns:
         if column.name not in row:
+            if column.nullable:
+                coerced[column.name] = None
+                continue
             raise LoaderError(f"Seed {origin} is missing column {column.name!r}")
         coerced[column.name] = _coerce_value(row[column.name], column)
     return coerced
@@ -219,6 +222,8 @@ def _coerce_row(row: dict[str, Any], spec: DatasourceSpec, origin: str) -> dict[
 
 def _coerce_value(value: Any, column: ColumnSpec) -> Any:
     if value is None or (isinstance(value, str) and value == ""):
+        if column.nullable:
+            return None
         raise LoaderError(f"Null/empty value for column {column.name!r}")
     if column.type == "string":
         return str(value)

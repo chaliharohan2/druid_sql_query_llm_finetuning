@@ -74,7 +74,13 @@ services:
   broker:
     <<: *druid-image
     container_name: druid-harness-broker
-    mem_limit: 1536m
+    # The nano-quickstart 512m heap OOM-killed the broker under the dataset generator's concurrent
+    # queries (10 workers, wide tables, large scan results). Sized up: this host has ~100 GB free.
+    mem_limit: 6g
+    environment:
+      - DRUID_XMX=4g
+      - DRUID_XMS=1g
+      - DRUID_MAXDIRECTMEMORYSIZE=1g
     volumes:
       - broker_var:/opt/druid/var
     depends_on:
@@ -92,7 +98,11 @@ services:
   historical:
     <<: *druid-image
     container_name: druid-harness-historical
-    mem_limit: 1536m
+    mem_limit: 5g
+    environment:
+      - DRUID_XMX=3g
+      - DRUID_XMS=1g
+      - DRUID_MAXDIRECTMEMORYSIZE=1g
     volumes:
       - druid_shared:/opt/shared
       - historical_var:/opt/druid/var
