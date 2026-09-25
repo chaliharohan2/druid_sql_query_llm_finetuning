@@ -12,7 +12,8 @@ from trl import SFTConfig, SFTTrainer
 import torch
 
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-OUTPUT_DIR = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora"
+OUTPUT_DIR = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_v2"
+BASE_MODEL = "Qwen/Qwen3.5-2B"
 
 class InferenceCallback(TrainerCallback):
     def __init__(self, tokenizer: AutoTokenizer, test_messages, n_steps, max_tokens=2048):
@@ -42,7 +43,7 @@ class InferenceCallback(TrainerCallback):
                                     return_dict=True
                                 ).to(DEVICE)
 
-                streamer = TextStreamer(tokenizer=self.tokenizer, skip_prompt=False, skip_special_tokens=True)
+                streamer = TextStreamer(tokenizer=self.tokenizer, skip_prompt=True, skip_special_tokens=True)
                 outputs = model.generate(**tokenized_chat , max_new_tokens=self.max_tokens, streamer=streamer)
 
         print("\n------------------ End Inference ------------------\n")
@@ -54,13 +55,13 @@ class InferenceCallback(TrainerCallback):
 if __name__ == "__main__":
 
     # load the dataset
-    train_dataset = load_dataset("json", data_files="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/train.jsonl", split="train")
-    eval_dataset = load_dataset("json", data_files="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/val.jsonl", split="train")
+    train_dataset = load_dataset("json", data_files="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/v2/train.jsonl", split="train")
+    eval_dataset = load_dataset("json", data_files="/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/v2/val_heldout_domain.jsonl", split="train")
     
     # Load base model
-    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-2B", dtype=torch.bfloat16)
+    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL, dtype=torch.bfloat16)
 
-    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3.5-2B")
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
     
     # Apply parameter efficient fine-tuning config
     peft_config = LoraConfig(
@@ -79,13 +80,19 @@ if __name__ == "__main__":
     model = get_peft_model(model=model, peft_config=peft_config)
     model.to(DEVICE) # move model to GPU
 
+    """
+    v1 was on older v1 dataset
+    v2 is 2 epochs, 5.0e-5 lr, batch = batch size 1 * grad_accum 16 = 16 , max length 30k on v2 dataset
+    """
     training_args = SFTConfig(
-        learning_rate=2.0e-4,
+        learning_rate=5.0e-5,
         assistant_only_loss=True,
-        per_device_train_batch_size=2,
-        gradient_accumulation_steps=1,
-        num_train_epochs=3,
-        max_length=2048,
+        per_device_train_batch_size=1,
+        per_device_eval_batch_size=1,
+        gradient_accumulation_steps=16,
+        gradient_checkpointing=True,
+        num_train_epochs=2,
+        max_length=30_000,
         logging_steps=10,
         eval_strategy="steps",
         eval_steps=50,
@@ -97,7 +104,7 @@ if __name__ == "__main__":
         seed=64,
         output_dir=OUTPUT_DIR,
         lr_scheduler_type="cosine",
-        warmup_steps=8,
+        warmup_steps=0.03
         # warmup_ratio=0.03
     )
     trainer = SFTTrainer(
@@ -106,9 +113,9 @@ if __name__ == "__main__":
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         processing_class=tokenizer,
-        callbacks=[InferenceCallback(tokenizer=tokenizer, test_messages=[train_dataset[0], train_dataset[2]], n_steps=100)]
+        callbacks=[InferenceCallback(tokenizer=tokenizer, test_messages=[eval_dataset[0], eval_dataset[2]], n_steps=300)]
     )
 
     trainer.train()
 
-    trainer.save_model("/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora")
+    trainer.save_model(OUTPUT_DIR)

@@ -6,12 +6,14 @@ import torch
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 stream = True
-use_custom_question = False
+use_custom_question = True
+BASE_MODEL = "Qwen/Qwen3.5-9B"
+LORA_ADAPTER_MODEL = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora/checkpoint-1500"
 
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-2B")
-peft_model = PeftModel.from_pretrained(model, "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora/checkpoint-1500")
-model = peft_model.merge_and_unload()
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3.5-2B")
+model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
+# peft_model = PeftModel.from_pretrained(model, LORA_ADAPTER_MODEL)
+# model = peft_model.merge_and_unload()
+tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
 if __name__ == "__main__":
 
