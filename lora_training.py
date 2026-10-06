@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # Apply parameter efficient fine-tuning config
     peft_config = LoraConfig(
         r=32,
-        lora_alpha=64,
+        lora_alpha=32, # set to 32 based on thinking machines blog post, should be equal to rank, earlier was 64
         lora_dropout=0.05,
         bias="none",
         task_type=TaskType.CAUSAL_LM,
@@ -82,16 +82,23 @@ if __name__ == "__main__":
 
     """
     v1 was on older v1 dataset
-    v2 is 2 epochs, 5.0e-5 lr, batch = batch size 1 * grad_accum 16 = 16 , max length 30k on v2 dataset
+
+    v2 smoke test 1 - 150 steps, 5.0e-5 lr, batch = batch size 1 * grad_accum 16 = 16 , max length 30k on v2 dataset
+    v2 smoke test 2 - 150 steps, 1.0e-4 lr, batch = batch size 1 * grad_accum 16 = 16 , max length 30k on v2 dataset
+    v2 smoke test 3 - 150 steps, 2.0e-4 lr, batch = batch size 1 * grad_accum 16 = 16 , max length 30k on v2 dataset
+
+    v2 is 2 epochs, 2.0e-4 lr, batch = batch size 1 * grad_accum 16 = 16 , max length 30k on v2 dataset
     """
+    print("Output dir: ", OUTPUT_DIR, "\n")
     training_args = SFTConfig(
-        learning_rate=5.0e-5,
+        learning_rate=2.0e-4,
         assistant_only_loss=True,
         per_device_train_batch_size=1,
         per_device_eval_batch_size=1,
         gradient_accumulation_steps=16,
         gradient_checkpointing=True,
         num_train_epochs=2,
+        # max_steps=150,
         max_length=30_000,
         logging_steps=10,
         eval_strategy="steps",
