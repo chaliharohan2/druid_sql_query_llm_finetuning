@@ -11,9 +11,12 @@ from datasets import load_dataset
 from trl import SFTConfig, SFTTrainer
 import torch
 
+import signal
+
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 OUTPUT_DIR = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_v2"
 BASE_MODEL = "Qwen/Qwen3.5-2B"
+RESUME_FROM = None # None if run is starting from scratch, otherwise put in checkpoint path here
 
 class InferenceCallback(TrainerCallback):
     def __init__(self, tokenizer: AutoTokenizer, test_messages, n_steps, max_tokens=2048):
@@ -50,6 +53,23 @@ class InferenceCallback(TrainerCallback):
 
         model.config.use_cache = was_caching
         model.train()
+        return control
+
+class GracefulStop(TrainerCallback):
+    def __init__(self):
+        self.stop_requested = False
+        signal.signal(signal.SIGINT, self._handle)
+
+    def _handle(self, signum, frame):
+        if self.stop_requested: # stop after second CTRL + C
+            raise KeyboardInterrupt
+        print("\n", "User manually stopping request, saving checkpoint....", "\n")
+        self.stop_requested = True
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if self.stop_requested:
+            control.should_save = True
+            control.should_training_stop = True
         return control
 
 if __name__ == "__main__":
@@ -120,9 +140,10 @@ if __name__ == "__main__":
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         processing_class=tokenizer,
-        callbacks=[InferenceCallback(tokenizer=tokenizer, test_messages=[eval_dataset[0], eval_dataset[2]], n_steps=300)]
+        callbacks=[InferenceCallback(tokenizer=tokenizer, test_messages=[eval_dataset[0], eval_dataset[2]], n_steps=300), GracefulStop()]
     )
 
-    trainer.train()
+    trainer.train(resume_from_checkpoint=RESUME_FROM)
 
-    trainer.save_model(OUTPUT_DIR)
+    if trainer.state.global_step >= trainer.state.max_steps: # Only save the final model if training is finished
+        trainer.save_model(OUTPUT_DIR)
