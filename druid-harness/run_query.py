@@ -23,13 +23,7 @@ from harness.api import result_as_dict, run_query
 
 # Replace this with the SQL you want to run.
 QUERY = """
-SELECT TIME_FLOOR(__time, 'P1D') AS "day",
-       LOOKUP(pop_code, 'pop_region') AS "pop_region",
-       COUNT(*) AS "record_count"
-FROM cdn_edge_daily
-WHERE __time >= CURRENT_TIMESTAMP - INTERVAL '14' DAY
-GROUP BY 1, 2
-ORDER BY 1, 2
+SELECT TIME_FORMAT(__time, 'HH') AS "hour_of_day", LATEST(moisturePercent) AS "latest_dampness", EARLIEST(soilTemperatureC) AS "initial_dirt_temp" FROM farmSensorsRaw WHERE cropType = 'corn' AND __time >= TIMESTAMP '2026-05-01 00:00:00' AND __time < TIMESTAMP '2026-06-01 00:00:00' GROUP BY 1 ORDER BY 1 ASC
 """
 
 ROUTER_URL = "http://127.0.0.1:8888"

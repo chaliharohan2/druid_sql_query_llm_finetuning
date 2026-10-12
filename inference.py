@@ -7,12 +7,12 @@ import torch
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 stream = True
 use_custom_question = True
-BASE_MODEL = "Qwen/Qwen3.5-9B"
-LORA_ADAPTER_MODEL = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora/checkpoint-1500"
+BASE_MODEL = "Qwen/Qwen3.5-2B"
+LORA_ADAPTER_MODEL = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_v2"
 
 model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
-# peft_model = PeftModel.from_pretrained(model, LORA_ADAPTER_MODEL)
-# model = peft_model.merge_and_unload()
+peft_model = PeftModel.from_pretrained(model, LORA_ADAPTER_MODEL)
+model = peft_model.merge_and_unload()
 tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
 if __name__ == "__main__":
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         if not use_custom_question:
             dataset = []
             try:
-                with open("/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/val.jsonl", mode="r") as f:
+                with open("/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/dataset/v2/test_heldout_shape.jsonl", mode="r") as f:
                     for line in f:
                         data_entry = json.loads(s=line)
                         dataset.append(data_entry)

@@ -16,7 +16,7 @@ import signal
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 OUTPUT_DIR = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_v2"
 BASE_MODEL = "Qwen/Qwen3.5-2B"
-RESUME_FROM = None # None if run is starting from scratch, otherwise put in checkpoint path here
+RESUME_FROM = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_v2/checkpoint-650" # None if run is starting from scratch, otherwise put in checkpoint path here
 
 class InferenceCallback(TrainerCallback):
     def __init__(self, tokenizer: AutoTokenizer, test_messages, n_steps, max_tokens=2048):
