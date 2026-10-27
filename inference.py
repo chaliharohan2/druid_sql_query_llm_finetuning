@@ -8,7 +8,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 stream = True
 use_custom_question = True
 BASE_MODEL = "Qwen/Qwen3.5-2B"
-LORA_ADAPTER_MODEL = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_v2"
+LORA_ADAPTER_MODEL = "/home/nz-dgx-spark-01/Documents/Nyalazone/druid_llm_finetuning/druid_sql_query_llm_finetuning/models/qwen_3_5_2B_lora_v2_chkpnt_650_copy/checkpoint-650/"
 
 model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
 peft_model = PeftModel.from_pretrained(model, LORA_ADAPTER_MODEL)
@@ -70,7 +70,7 @@ if __name__ == "__main__":
             messages, 
             tokenize=True, 
             add_generation_prompt=True, 
-            enable_thinking=False, 
+            enable_thinking=False,
             return_tensors="pt",
             return_dict=True
             ).to(device)
@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
         if stream:
             # streaming approach
-            streamer = TextStreamer(tokenizer=tokenizer, skip_prompt=False, skip_special_tokens=True)
+            streamer = TextStreamer(tokenizer=tokenizer, skip_prompt=True, skip_special_tokens=True)
             outputs = model.generate(**tokenized_chat , max_new_tokens=2048, streamer=streamer)
         else:
             # direct approach
